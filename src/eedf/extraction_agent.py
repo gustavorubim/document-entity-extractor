@@ -1,14 +1,22 @@
-"""LangGraph agent for contract extraction."""
+"""LangGraph agent for schema-driven extraction."""
 
-from typing import TypedDict
+import asyncio
+import logging
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, TypedDict
 
 from langgraph.graph import END, StateGraph
 
 from .config import MAX_CHUNK_SIZE, CHUNK_OVERLAP
 from .database import save_extraction, update_document_status
 from .document_loader import chunk_text
-from .llm_client import extract_contract_data, merge_extractions
-from .schemas import ContractExtraction
+from .llm_client import extract_structured_data
+from .schema_loader import get_active_schema, merge_extractions
+
+logger = logging.getLogger(__name__)
+
+# Thread pool for parallel LLM calls
+_executor = ThreadPoolExecutor(max_workers=4)
 
 
 class ExtractionState(TypedDict):
@@ -17,8 +25,8 @@ class ExtractionState(TypedDict):
     document_text: str
     document_type: str
     chunks: list[str]
-    raw_extractions: list[ContractExtraction]
-    contract_data: ContractExtraction | None
+    raw_extractions: list[dict[str, Any]]
+    extraction_data: dict[str, Any] | None
     status: str
     error: str | None
 
@@ -34,19 +42,35 @@ def chunk_document_node(state: ExtractionState) -> ExtractionState:
     }
 
 
-def extract_contract_info_node(state: ExtractionState) -> ExtractionState:
-    """Call Gemini for each chunk to extract contract information."""
-    chunks = state["chunks"]
-    extractions: list[ContractExtraction] = []
+async def extract_single_chunk(chunk: str, chunk_index: int) -> dict[str, Any] | None:
+    """Extract data from a single chunk asynchronously."""
+    loop = asyncio.get_event_loop()
+    try:
+        extraction = await loop.run_in_executor(_executor, extract_structured_data, chunk)
+        logger.debug(f"Successfully extracted chunk {chunk_index}")
+        return extraction
+    except Exception as e:
+        logger.warning(f"Error extracting from chunk {chunk_index}: {e}", exc_info=True)
+        return None
 
-    for chunk in chunks:
-        try:
-            extraction = extract_contract_data(chunk)
-            extractions.append(extraction)
-        except Exception as e:
-            # Continue with other chunks even if one fails
-            print(f"Error extracting from chunk: {e}")
-            continue
+
+async def extract_contract_info_node(state: ExtractionState) -> ExtractionState:
+    """Call Gemini for each chunk to extract contract information (parallel)."""
+    chunks = state["chunks"]
+    logger.info(f"Processing {len(chunks)} chunks in parallel")
+
+    # Create tasks for parallel extraction
+    tasks = [
+        extract_single_chunk(chunk, i)
+        for i, chunk in enumerate(chunks)
+    ]
+
+    # Execute all extractions in parallel
+    results = await asyncio.gather(*tasks, return_exceptions=False)
+
+    # Filter out failed extractions (None results)
+    extractions = [r for r in results if r is not None]
+    logger.info(f"Successfully extracted {len(extractions)}/{len(chunks)} chunks")
 
     return {
         **state,
@@ -58,11 +82,12 @@ def extract_contract_info_node(state: ExtractionState) -> ExtractionState:
 def merge_results_node(state: ExtractionState) -> ExtractionState:
     """Combine extractions from all chunks, deduplicate."""
     extractions = state["raw_extractions"]
-    merged = merge_extractions(extractions)
+    schema = get_active_schema()
+    merged = merge_extractions(schema, extractions)
 
     return {
         **state,
-        "contract_data": merged,
+        "extraction_data": merged,
         "status": "merge_complete",
     }
 
@@ -70,11 +95,12 @@ def merge_results_node(state: ExtractionState) -> ExtractionState:
 async def save_to_database_node(state: ExtractionState) -> ExtractionState:
     """Persist extraction results to SQLite."""
     document_id = state["document_id"]
-    contract_data = state["contract_data"]
+    extraction_data = state["extraction_data"]
 
-    if contract_data:
+    if extraction_data:
         try:
-            await save_extraction(document_id, contract_data)
+            schema = get_active_schema()
+            await save_extraction(document_id, extraction_data, schema)
             await update_document_status(document_id, "completed")
             return {
                 **state,
@@ -134,7 +160,7 @@ async def process_document(
         "document_type": document_type,
         "chunks": [],
         "raw_extractions": [],
-        "contract_data": None,
+        "extraction_data": None,
         "status": "started",
         "error": None,
     }

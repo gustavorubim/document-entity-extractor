@@ -446,6 +446,27 @@
             font-size: 0.85rem;
         }
 
+        .list-items {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .list-item {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-radius: 6px;
+        }
+
+        .list-item strong {
+            color: #2c3e50;
+        }
+
+        .list-item span {
+            color: #7f8c8d;
+            font-size: 0.85rem;
+        }
+
         /* Loading spinner */
         .loading {
             display: inline-block;
@@ -462,10 +483,213 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Upload progress indicator */
+        .upload-progress {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .upload-progress.active {
+            display: block;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            text-align: center;
+        }
+
+        .upload-zone.uploading {
+            border-color: #3498db;
+            background: #f8fbfe;
+            pointer-events: none;
+        }
+
+        .upload-zone.uploading svg {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         .empty-state {
             text-align: center;
             padding: 40px;
             color: #7f8c8d;
+        }
+
+        /* Mobile Responsiveness */
+        @media screen and (max-width: 768px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .ribbon {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .ribbon-header {
+                width: 100%;
+                padding: 12px 16px;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .ribbon-header h1 {
+                font-size: 1.25rem;
+            }
+
+            .ribbon-nav {
+                display: flex;
+                flex-direction: row;
+                width: 100%;
+                padding: 0;
+            }
+
+            .nav-item {
+                flex: 1;
+                justify-content: center;
+                padding: 12px 8px;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+
+            .nav-item.active {
+                border-left-color: transparent;
+                border-bottom-color: #2980b9;
+            }
+
+            .nav-item svg {
+                margin-right: 6px;
+                width: 16px;
+                height: 16px;
+            }
+
+            .main-content {
+                flex: 1;
+                min-height: 0;
+            }
+
+            .content-header {
+                padding: 16px;
+            }
+
+            .content-body {
+                padding: 16px;
+            }
+
+            .upload-zone {
+                padding: 40px 20px;
+            }
+
+            .upload-zone svg {
+                width: 48px;
+                height: 48px;
+            }
+
+            .upload-zone h3 {
+                font-size: 1rem;
+            }
+
+            .documents-table {
+                overflow-x: auto;
+            }
+
+            .documents-table th,
+            .documents-table td {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal {
+                width: 95%;
+                max-height: 90vh;
+                margin: 16px;
+            }
+
+            .modal-header {
+                padding: 16px;
+            }
+
+            .modal-body {
+                padding: 16px;
+            }
+
+            .sql-editor textarea {
+                height: 100px;
+                font-size: 0.85rem;
+            }
+
+            .sql-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .run-btn {
+                width: 100%;
+            }
+
+            .query-shortcuts {
+                margin-top: 12px;
+            }
+
+            .results-table {
+                max-height: 300px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .nav-item span {
+                display: none;
+            }
+
+            .nav-item svg {
+                margin-right: 0;
+            }
+
+            .ribbon-header p {
+                display: none;
+            }
+
+            .documents-table th:nth-child(3),
+            .documents-table td:nth-child(3),
+            .documents-table th:nth-child(4),
+            .documents-table td:nth-child(4) {
+                display: none;
+            }
+
+            .view-btn {
+                padding: 4px 8px;
+                font-size: 0.75rem;
+            }
         }
     </style>
 </head>
@@ -508,6 +732,12 @@
                     <h3>Drop files here or click to upload</h3>
                     <p>Supports PDF and DOCX files</p>
                     <input type="file" id="file-input" accept=".pdf,.docx,.doc" multiple>
+                    <div class="upload-progress" id="upload-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progress-bar"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text">Uploading...</div>
+                    </div>
                 </div>
 
                 <!-- Documents List -->
@@ -546,13 +776,7 @@
                     <textarea id="sql-query" placeholder="Enter your SQL query...">SELECT * FROM documents ORDER BY upload_date DESC LIMIT 10;</textarea>
                     <div class="sql-actions">
                         <button class="run-btn" id="run-sql">Run Query</button>
-                        <div class="query-shortcuts">
-                            <button class="shortcut-btn" data-query="SELECT * FROM documents ORDER BY upload_date DESC LIMIT 10;">Documents</button>
-                            <button class="shortcut-btn" data-query="SELECT * FROM contracts ORDER BY extracted_at DESC LIMIT 10;">Contracts</button>
-                            <button class="shortcut-btn" data-query="SELECT * FROM obligations ORDER BY id DESC LIMIT 10;">Obligations</button>
-                            <button class="shortcut-btn" data-query="SELECT * FROM clauses ORDER BY id DESC LIMIT 10;">Clauses</button>
-                            <button class="shortcut-btn" data-query="SELECT d.filename, c.contract_type, c.effective_date, c.termination_date FROM documents d JOIN contracts c ON d.id = c.document_id;">Summary</button>
-                        </div>
+                        <div class="query-shortcuts" id="query-shortcuts"></div>
                     </div>
                 </div>
                 <div class="sql-results" id="sql-results">
@@ -579,6 +803,18 @@
         // State
         let currentSection = 'process';
         let refreshInterval = null;
+        let activeSchema = null;
+
+        // HTML sanitization to prevent XSS
+        function escapeHtml(unsafe) {
+            if (unsafe === null || unsafe === undefined) return '';
+            return String(unsafe)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
 
         // DOM Elements
         const navItems = document.querySelectorAll('.nav-item');
@@ -593,7 +829,7 @@
         const modalBody = document.getElementById('modal-body');
         const modalTitle = document.getElementById('modal-title');
         const closeModalBtn = document.getElementById('close-modal');
-        const shortcutBtns = document.querySelectorAll('.shortcut-btn');
+        const shortcutContainer = document.getElementById('query-shortcuts');
 
         // Navigation
         navItems.forEach(item => {
@@ -631,28 +867,62 @@
         });
 
         async function uploadFiles(files) {
+            const progressContainer = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const totalFiles = files.length;
+            let uploadedCount = 0;
+            let successCount = 0;
+
+            // Show progress indicator
+            uploadZone.classList.add('uploading');
+            progressContainer.classList.add('active');
+            progressBar.style.width = '0%';
+            progressText.textContent = `Uploading 0/${totalFiles} files...`;
+
             for (const file of files) {
                 const formData = new FormData();
                 formData.append('file', file);
 
                 try {
+                    progressText.textContent = `Uploading ${escapeHtml(file.name)}...`;
+
                     const response = await fetch('/api/upload', {
                         method: 'POST',
                         body: formData
                     });
 
+                    uploadedCount++;
+                    const progress = Math.round((uploadedCount / totalFiles) * 100);
+                    progressBar.style.width = `${progress}%`;
+
                     if (!response.ok) {
                         const error = await response.json();
-                        alert(`Error uploading ${file.name}: ${error.detail}`);
+                        alert(`Error uploading ${escapeHtml(file.name)}: ${escapeHtml(error.detail)}`);
                         continue;
                     }
 
+                    successCount++;
                     const result = await response.json();
                     console.log('Uploaded:', result);
+                    progressText.textContent = `Uploaded ${uploadedCount}/${totalFiles} files...`;
                 } catch (error) {
-                    alert(`Error uploading ${file.name}: ${error.message}`);
+                    uploadedCount++;
+                    alert(`Error uploading ${escapeHtml(file.name)}: ${escapeHtml(error.message)}`);
                 }
             }
+
+            // Show completion message
+            progressBar.style.width = '100%';
+            progressText.textContent = `Completed: ${successCount}/${totalFiles} files uploaded successfully`;
+
+            // Hide progress after a delay
+            setTimeout(() => {
+                uploadZone.classList.remove('uploading');
+                progressContainer.classList.remove('active');
+                progressBar.style.width = '0%';
+            }, 2000);
+
             loadDocuments();
         }
 
@@ -669,12 +939,12 @@
 
                 documentsList.innerHTML = data.documents.map(doc => `
                     <tr>
-                        <td>${doc.id}</td>
-                        <td>${doc.filename}</td>
-                        <td>${doc.file_type.toUpperCase()}</td>
-                        <td>${new Date(doc.upload_date).toLocaleString()}</td>
-                        <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
-                        <td><button class="view-btn" onclick="viewDocument(${doc.id})">View</button></td>
+                        <td>${escapeHtml(doc.id)}</td>
+                        <td>${escapeHtml(doc.filename)}</td>
+                        <td>${escapeHtml(doc.file_type.toUpperCase())}</td>
+                        <td>${escapeHtml(new Date(doc.upload_date).toLocaleString())}</td>
+                        <td><span class="status-badge status-${escapeHtml(doc.status)}">${escapeHtml(doc.status)}</span></td>
+                        <td><button class="view-btn" onclick="viewDocument(${parseInt(doc.id, 10) || 0})">View</button></td>
                     </tr>
                 `).join('');
 
@@ -694,7 +964,7 @@
         // View Document Details
         async function viewDocument(id) {
             try {
-                const response = await fetch(`/api/documents/${id}`);
+                const response = await fetch(`/api/documents/${parseInt(id, 10) || 0}`);
                 const data = await response.json();
 
                 modalTitle.textContent = data.document.filename;
@@ -705,101 +975,26 @@
                         <div class="detail-grid">
                             <div class="detail-item">
                                 <label>Status</label>
-                                <span class="status-badge status-${data.document.status}">${data.document.status}</span>
+                                <span class="status-badge status-${escapeHtml(data.document.status)}">${escapeHtml(data.document.status)}</span>
                             </div>
                             <div class="detail-item">
                                 <label>Type</label>
-                                <span>${data.document.file_type.toUpperCase()}</span>
+                                <span>${escapeHtml(data.document.file_type.toUpperCase())}</span>
                             </div>
                             <div class="detail-item">
                                 <label>Upload Date</label>
-                                <span>${new Date(data.document.upload_date).toLocaleString()}</span>
+                                <span>${escapeHtml(new Date(data.document.upload_date).toLocaleString())}</span>
                             </div>
                         </div>
                     </div>
                 `;
 
-                if (data.contract) {
-                    html += `
-                        <div class="detail-section">
-                            <h4>Contract Details</h4>
-                            <div class="detail-grid">
-                                <div class="detail-item">
-                                    <label>Contract Type</label>
-                                    <span>${data.contract.contract_type || 'N/A'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <label>Effective Date</label>
-                                    <span>${data.contract.effective_date || 'N/A'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <label>Termination Date</label>
-                                    <span>${data.contract.termination_date || 'N/A'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <label>Extracted At</label>
-                                    <span>${new Date(data.contract.extracted_at).toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-                    if (data.contract.parties && data.contract.parties.length > 0) {
-                        html += `
-                            <div class="detail-section">
-                                <h4>Parties</h4>
-                                <div class="parties-list">
-                                    ${data.contract.parties.map(p => `
-                                        <div class="party-item">
-                                            <strong>${p.name}</strong>
-                                            ${p.role ? `<span> - ${p.role}</span>` : ''}
-                                            ${p.address ? `<br><span>${p.address}</span>` : ''}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-
-                if (data.obligations && data.obligations.length > 0) {
-                    html += `
-                        <div class="detail-section">
-                            <h4>Obligations</h4>
-                            <div class="obligations-list">
-                                ${data.obligations.map(o => `
-                                    <div class="obligation-item">
-                                        <strong>${o.party}</strong>
-                                        <span>: ${o.description}</span>
-                                        ${o.due_date ? `<br><span>Due: ${o.due_date}</span>` : ''}
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                if (data.clauses && data.clauses.length > 0) {
-                    html += `
-                        <div class="detail-section">
-                            <h4>Clauses</h4>
-                            <div class="clauses-list">
-                                ${data.clauses.map(c => `
-                                    <div class="clause-item">
-                                        <strong>${c.clause_type}</strong>
-                                        ${c.section_reference ? `<span> (${c.section_reference})</span>` : ''}
-                                        <br><span>${c.clause_text}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
+                html += renderExtractionDetails(data.extraction);
 
                 modalBody.innerHTML = html;
                 modal.classList.add('active');
             } catch (error) {
-                alert('Error loading document details: ' + error.message);
+                alert('Error loading document details: ' + escapeHtml(error.message));
             }
         }
 
@@ -823,12 +1018,46 @@
             }
         });
 
-        shortcutBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                sqlQuery.value = btn.dataset.query;
-                runSql();
+        function renderShortcuts() {
+            if (!activeSchema || !shortcutContainer) return;
+
+            const buttons = [];
+            buttons.push({
+                label: 'Documents',
+                query: 'SELECT * FROM documents ORDER BY upload_date DESC LIMIT 10;'
             });
-        });
+
+            const rootTable = activeSchema.root?.table || 'extractions';
+            buttons.push({
+                label: titleize(rootTable),
+                query: `SELECT * FROM ${rootTable} ORDER BY id DESC LIMIT 10;`
+            });
+
+            const childTables = new Set();
+            (activeSchema.fields || []).forEach(field => {
+                if (field.type === 'array' && field.sql?.table) {
+                    childTables.add(field.sql.table);
+                }
+            });
+
+            childTables.forEach(table => {
+                buttons.push({
+                    label: titleize(table),
+                    query: `SELECT * FROM ${table} ORDER BY id DESC LIMIT 10;`
+                });
+            });
+
+            shortcutContainer.innerHTML = buttons.map(btn => `
+                <button class="shortcut-btn" data-query="${btn.query.replace(/\"/g, '&quot;')}">${btn.label}</button>
+            `).join('');
+
+            shortcutContainer.querySelectorAll('.shortcut-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    sqlQuery.value = btn.dataset.query;
+                    runSql();
+                });
+            });
+        }
 
         async function runSql() {
             const query = sqlQuery.value.trim();
@@ -846,7 +1075,7 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    sqlResults.innerHTML = `<div class="error-message">${data.detail}</div>`;
+                    sqlResults.innerHTML = `<div class="error-message">${escapeHtml(data.detail)}</div>`;
                     return;
                 }
 
@@ -856,11 +1085,11 @@
                 }
 
                 sqlResults.innerHTML = `
-                    <h4>Results (${data.row_count} rows)</h4>
+                    <h4>Results (${parseInt(data.row_count, 10) || 0} rows)</h4>
                     <div class="results-table">
                         <table>
                             <thead>
-                                <tr>${data.columns.map(c => `<th>${c}</th>`).join('')}</tr>
+                                <tr>${data.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr>
                             </thead>
                             <tbody>
                                 ${data.rows.map(row => `
@@ -871,20 +1100,131 @@
                     </div>
                 `;
             } catch (error) {
-                sqlResults.innerHTML = `<div class="error-message">${error.message}</div>`;
+                sqlResults.innerHTML = `<div class="error-message">${escapeHtml(error.message)}</div>`;
             }
         }
 
         function formatCell(value) {
             if (value === null) return '<em>null</em>';
-            if (typeof value === 'string' && value.length > 100) {
-                return value.substring(0, 100) + '...';
+            const stringValue = String(value);
+            if (stringValue.length > 100) {
+                return escapeHtml(stringValue.substring(0, 100)) + '...';
             }
-            return value;
+            return escapeHtml(stringValue);
+        }
+
+        async function loadSchema() {
+            try {
+                const response = await fetch('/api/schema');
+                activeSchema = await response.json();
+                renderShortcuts();
+            } catch (error) {
+                console.error('Error loading schema:', error);
+            }
+        }
+
+        function renderExtractionDetails(extraction) {
+            if (!activeSchema || !extraction) {
+                return '<div class="detail-section"><h4>Extraction</h4><div class="empty-state">No extraction data available</div></div>';
+            }
+
+            let html = '<div class="detail-section"><h4>Extraction</h4>';
+            const scalarItems = [];
+            const arraySections = [];
+
+            (activeSchema.fields || []).forEach(field => {
+                const value = extraction[field.name];
+                if (field.type === 'array') {
+                    arraySections.push(renderArrayField(field, value));
+                } else {
+                    scalarItems.push(`
+                        <div class="detail-item">
+                            <label>${escapeHtml(labelize(field.name))}</label>
+                            <span>${formatValue(value)}</span>
+                        </div>
+                    `);
+                }
+            });
+
+            if (scalarItems.length > 0) {
+                html += `<div class="detail-grid">${scalarItems.join('')}</div>`;
+            }
+
+            html += '</div>';
+            return html + arraySections.join('');
+        }
+
+        function renderArrayField(field, value) {
+            const items = Array.isArray(value) ? value : [];
+            const fieldLabel = escapeHtml(labelize(field.name));
+            if (items.length === 0) {
+                return `
+                    <div class="detail-section">
+                        <h4>${fieldLabel}</h4>
+                        <div class="empty-state">No entries</div>
+                    </div>
+                `;
+            }
+
+            if (field.items?.type === 'object') {
+                return `
+                    <div class="detail-section">
+                        <h4>${fieldLabel}</h4>
+                        <div class="list-items">
+                            ${items.map(item => `
+                                <div class="list-item">
+                                    ${renderObjectItem(item)}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="detail-section">
+                    <h4>${fieldLabel}</h4>
+                    <div class="list-items">
+                        ${items.map(item => `
+                            <div class="list-item">
+                                <span>${formatValue(item)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderObjectItem(item) {
+            return Object.keys(item || {}).map(key => `
+                <div>
+                    <strong>${escapeHtml(labelize(key))}:</strong>
+                    <span>${formatValue(item[key])}</span>
+                </div>
+            `).join('');
+        }
+
+        function labelize(value) {
+            return String(value || '')
+                .replace(/_/g, ' ')
+                .replace(/\\b\\w/g, char => char.toUpperCase());
+        }
+
+        function titleize(value) {
+            return labelize(value).replace(/\\s+/g, ' ');
+        }
+
+        function formatValue(value) {
+            if (value === null || value === undefined || value === '') return 'N/A';
+            const stringValue = String(value);
+            if (stringValue.length > 100) {
+                return escapeHtml(stringValue.substring(0, 100)) + '...';
+            }
+            return escapeHtml(stringValue);
         }
 
         // Initial load
-        loadDocuments();
+        loadSchema().then(loadDocuments);
     </script>
 </body>
 </html>
