@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EEDF - Document Processing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Left Ribbon Navigation */
+        .ribbon {
+            width: 240px;
+            background: #ffffff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
+
+        .ribbon-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .ribbon-header h1 {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .ribbon-header p {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+        }
+
+        .ribbon-nav {
+            flex: 1;
+            padding: 16px 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            cursor: pointer;
+            color: #555;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: #f8f9fa;
+        }
+
+        .nav-item.active {
+            background: #e8f4fd;
+            color: #2980b9;
+            border-left-color: #2980b9;
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-header {
+            padding: 20px 30px;
+            background: #ffffff;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .content-header h2 {
+            font-size: 1.25rem;
+            color: #2c3e50;
+        }
+
+        .content-body {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed #bdc3c7;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            background: #ffffff;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #3498db;
+            background: #f8fbfe;
+        }
+
+        .upload-zone svg {
+            width: 64px;
+            height: 64px;
+            color: #bdc3c7;
+            margin-bottom: 16px;
+        }
+
+        .upload-zone h3 {
+            font-size: 1.25rem;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .upload-zone p {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .upload-zone input {
+            display: none;
+        }
+
+        /* Documents List */
+        .documents-section {
+            margin-top: 30px;
+        }
+
+        .documents-section h3 {
+            font-size: 1rem;
+            color: #2c3e50;
+            margin-bottom: 16px;
+        }
+
+        .documents-table {
+            width: 100%;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .documents-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .documents-table th, .documents-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .documents-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.85rem;
+        }
+
+        .documents-table td {
+            font-size: 0.9rem;
+        }
+
+        .documents-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .documents-table tr:hover td {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-pending { background: #fef5e7; color: #d68910; }
+        .status-processing { background: #e8f6fd; color: #2e86ab; }
+        .status-completed { background: #e8f8f0; color: #27ae60; }
+        .status-error { background: #fdeaea; color: #c0392b; }
+
+        .view-btn {
+            padding: 6px 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .view-btn:hover {
+            background: #2980b9;
+        }
+
+        /* SQL Explorer */
+        .sql-editor {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .sql-editor textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+
+        .sql-editor textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .sql-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .run-btn {
+            padding: 10px 24px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .run-btn:hover {
+            background: #219a52;
+        }
+
+        .query-shortcuts {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .shortcut-btn {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        .shortcut-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .sql-results {
+            margin-top: 24px;
+        }
+
+        .sql-results h4 {
+            font-size: 0.9rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+
+        .results-table {
+            width: 100%;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: auto;
+            max-height: 400px;
+        }
+
+        .results-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .results-table th, .results-table td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+            white-space: nowrap;
+        }
+
+        .results-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .error-message {
+            background: #fdeaea;
+            color: #c0392b;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        /* Document Detail Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #ffffff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .detail-section {
+            margin-bottom: 24px;
+        }
+
+        .detail-section h4 {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .detail-item {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-radius: 6px;
+        }
+
+        .detail-item label {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .detail-item span {
+            font-size: 0.95rem;
+            color: #2c3e50;
+        }
+
+        .parties-list, .obligations-list, .clauses-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .party-item, .obligation-item, .clause-item {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-radius: 6px;
+        }
+
+        .party-item strong, .obligation-item strong, .clause-item strong {
+            color: #2c3e50;
+        }
+
+        .party-item span, .obligation-item span, .clause-item span {
+            color: #7f8c8d;
+            font-size: 0.85rem;
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <!-- Left Ribbon Navigation -->
+    <nav class="ribbon">
+        <div class="ribbon-header">
+            <h1>EEDF</h1>
+            <p>Document Processing</p>
+        </div>
+        <div class="ribbon-nav">
+            <div class="nav-item active" data-section="process">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Process Documents
+            </div>
+            <div class="nav-item" data-section="sql">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                </svg>
+                SQL Explorer
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Process Documents Section -->
+        <section id="process-section" class="section active">
+            <header class="content-header">
+                <h2>Process Documents</h2>
+            </header>
+            <div class="content-body">
+                <!-- Upload Zone -->
+                <div class="upload-zone" id="upload-zone">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <h3>Drop files here or click to upload</h3>
+                    <p>Supports PDF and DOCX files</p>
+                    <input type="file" id="file-input" accept=".pdf,.docx,.doc" multiple>
+                </div>
+
+                <!-- Documents List -->
+                <div class="documents-section">
+                    <h3>Processed Documents</h3>
+                    <div class="documents-table" id="documents-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Filename</th>
+                                    <th>Type</th>
+                                    <th>Upload Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documents-list">
+                                <tr>
+                                    <td colspan="6" class="empty-state">No documents uploaded yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SQL Explorer Section -->
+        <section id="sql-section" class="section">
+            <header class="content-header">
+                <h2>SQL Explorer</h2>
+            </header>
+            <div class="content-body">
+                <div class="sql-editor">
+                    <textarea id="sql-query" placeholder="Enter your SQL query...">SELECT * FROM documents ORDER BY upload_date DESC LIMIT 10;</textarea>
+                    <div class="sql-actions">
+                        <button class="run-btn" id="run-sql">Run Query</button>
+                        <div class="query-shortcuts">
+                            <button class="shortcut-btn" data-query="SELECT * FROM documents ORDER BY upload_date DESC LIMIT 10;">Documents</button>
+                            <button class="shortcut-btn" data-query="SELECT * FROM contracts ORDER BY extracted_at DESC LIMIT 10;">Contracts</button>
+                            <button class="shortcut-btn" data-query="SELECT * FROM obligations ORDER BY id DESC LIMIT 10;">Obligations</button>
+                            <button class="shortcut-btn" data-query="SELECT * FROM clauses ORDER BY id DESC LIMIT 10;">Clauses</button>
+                            <button class="shortcut-btn" data-query="SELECT d.filename, c.contract_type, c.effective_date, c.termination_date FROM documents d JOIN contracts c ON d.id = c.document_id;">Summary</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sql-results" id="sql-results">
+                    <!-- Results will be rendered here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Document Detail Modal -->
+    <div class="modal-overlay" id="document-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Document Details</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentSection = 'process';
+        let refreshInterval = null;
+
+        // DOM Elements
+        const navItems = document.querySelectorAll('.nav-item');
+        const sections = document.querySelectorAll('.section');
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('file-input');
+        const documentsList = document.getElementById('documents-list');
+        const sqlQuery = document.getElementById('sql-query');
+        const runSqlBtn = document.getElementById('run-sql');
+        const sqlResults = document.getElementById('sql-results');
+        const modal = document.getElementById('document-modal');
+        const modalBody = document.getElementById('modal-body');
+        const modalTitle = document.getElementById('modal-title');
+        const closeModalBtn = document.getElementById('close-modal');
+        const shortcutBtns = document.querySelectorAll('.shortcut-btn');
+
+        // Navigation
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const section = item.dataset.section;
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                sections.forEach(s => s.classList.remove('active'));
+                document.getElementById(`${section}-section`).classList.add('active');
+                currentSection = section;
+            });
+        });
+
+        // File Upload
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            uploadFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            uploadFiles(e.target.files);
+        });
+
+        async function uploadFiles(files) {
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        alert(`Error uploading ${file.name}: ${error.detail}`);
+                        continue;
+                    }
+
+                    const result = await response.json();
+                    console.log('Uploaded:', result);
+                } catch (error) {
+                    alert(`Error uploading ${file.name}: ${error.message}`);
+                }
+            }
+            loadDocuments();
+        }
+
+        // Load Documents
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/documents');
+                const data = await response.json();
+
+                if (data.documents.length === 0) {
+                    documentsList.innerHTML = '<tr><td colspan="6" class="empty-state">No documents uploaded yet</td></tr>';
+                    return;
+                }
+
+                documentsList.innerHTML = data.documents.map(doc => `
+                    <tr>
+                        <td>${doc.id}</td>
+                        <td>${doc.filename}</td>
+                        <td>${doc.file_type.toUpperCase()}</td>
+                        <td>${new Date(doc.upload_date).toLocaleString()}</td>
+                        <td><span class="status-badge status-${doc.status}">${doc.status}</span></td>
+                        <td><button class="view-btn" onclick="viewDocument(${doc.id})">View</button></td>
+                    </tr>
+                `).join('');
+
+                // Check if any documents are still processing
+                const hasProcessing = data.documents.some(d => d.status === 'processing' || d.status === 'pending');
+                if (hasProcessing && !refreshInterval) {
+                    refreshInterval = setInterval(loadDocuments, 3000);
+                } else if (!hasProcessing && refreshInterval) {
+                    clearInterval(refreshInterval);
+                    refreshInterval = null;
+                }
+            } catch (error) {
+                console.error('Error loading documents:', error);
+            }
+        }
+
+        // View Document Details
+        async function viewDocument(id) {
+            try {
+                const response = await fetch(`/api/documents/${id}`);
+                const data = await response.json();
+
+                modalTitle.textContent = data.document.filename;
+
+                let html = `
+                    <div class="detail-section">
+                        <h4>Document Info</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>Status</label>
+                                <span class="status-badge status-${data.document.status}">${data.document.status}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Type</label>
+                                <span>${data.document.file_type.toUpperCase()}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Upload Date</label>
+                                <span>${new Date(data.document.upload_date).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (data.contract) {
+                    html += `
+                        <div class="detail-section">
+                            <h4>Contract Details</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <label>Contract Type</label>
+                                    <span>${data.contract.contract_type || 'N/A'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Effective Date</label>
+                                    <span>${data.contract.effective_date || 'N/A'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Termination Date</label>
+                                    <span>${data.contract.termination_date || 'N/A'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Extracted At</label>
+                                    <span>${new Date(data.contract.extracted_at).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    if (data.contract.parties && data.contract.parties.length > 0) {
+                        html += `
+                            <div class="detail-section">
+                                <h4>Parties</h4>
+                                <div class="parties-list">
+                                    ${data.contract.parties.map(p => `
+                                        <div class="party-item">
+                                            <strong>${p.name}</strong>
+                                            ${p.role ? `<span> - ${p.role}</span>` : ''}
+                                            ${p.address ? `<br><span>${p.address}</span>` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                if (data.obligations && data.obligations.length > 0) {
+                    html += `
+                        <div class="detail-section">
+                            <h4>Obligations</h4>
+                            <div class="obligations-list">
+                                ${data.obligations.map(o => `
+                                    <div class="obligation-item">
+                                        <strong>${o.party}</strong>
+                                        <span>: ${o.description}</span>
+                                        ${o.due_date ? `<br><span>Due: ${o.due_date}</span>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (data.clauses && data.clauses.length > 0) {
+                    html += `
+                        <div class="detail-section">
+                            <h4>Clauses</h4>
+                            <div class="clauses-list">
+                                ${data.clauses.map(c => `
+                                    <div class="clause-item">
+                                        <strong>${c.clause_type}</strong>
+                                        ${c.section_reference ? `<span> (${c.section_reference})</span>` : ''}
+                                        <br><span>${c.clause_text}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                modalBody.innerHTML = html;
+                modal.classList.add('active');
+            } catch (error) {
+                alert('Error loading document details: ' + error.message);
+            }
+        }
+
+        // Close Modal
+        closeModalBtn.addEventListener('click', () => {
+            modal.classList.remove('active');
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+
+        // SQL Explorer
+        runSqlBtn.addEventListener('click', runSql);
+
+        sqlQuery.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                runSql();
+            }
+        });
+
+        shortcutBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                sqlQuery.value = btn.dataset.query;
+                runSql();
+            });
+        });
+
+        async function runSql() {
+            const query = sqlQuery.value.trim();
+            if (!query) return;
+
+            sqlResults.innerHTML = '<div class="loading"></div>';
+
+            try {
+                const response = await fetch('/api/sql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    sqlResults.innerHTML = `<div class="error-message">${data.detail}</div>`;
+                    return;
+                }
+
+                if (data.columns.length === 0) {
+                    sqlResults.innerHTML = '<div class="empty-state">No results</div>';
+                    return;
+                }
+
+                sqlResults.innerHTML = `
+                    <h4>Results (${data.row_count} rows)</h4>
+                    <div class="results-table">
+                        <table>
+                            <thead>
+                                <tr>${data.columns.map(c => `<th>${c}</th>`).join('')}</tr>
+                            </thead>
+                            <tbody>
+                                ${data.rows.map(row => `
+                                    <tr>${row.map(cell => `<td>${formatCell(cell)}</td>`).join('')}</tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (error) {
+                sqlResults.innerHTML = `<div class="error-message">${error.message}</div>`;
+            }
+        }
+
+        function formatCell(value) {
+            if (value === null) return '<em>null</em>';
+            if (typeof value === 'string' && value.length > 100) {
+                return value.substring(0, 100) + '...';
+            }
+            return value;
+        }
+
+        // Initial load
+        loadDocuments();
+    </script>
+</body>
+</html>
