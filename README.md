@@ -26,11 +26,19 @@ A Python application that leverages Google Gemini LLM to extract structured data
 - [Database Schema](#database-schema)
 - [Schema & Migration Plan](#schema--migration-plan)
   - [Schema File Format](#schema-file-format)
-  - [Schema Structure Tutorial](#schema-structure-tutorial)
-  - [Defining Simple Fields](#defining-simple-fields)
-  - [Defining Array Fields](#defining-array-fields)
-  - [Merge Strategies](#merge-strategies)
-  - [Complete Example: Invoice Schema](#complete-example-invoice-schema)
+- [Building a Custom Extraction Schema from Scratch](#building-a-custom-extraction-schema-from-scratch)
+  - [Step 1: Plan What You Want to Extract](#step-1-plan-what-you-want-to-extract)
+  - [Step 2: Create the File and Add Metadata](#step-2-create-the-file-and-add-metadata)
+  - [Step 3: Configure the LLM Prompt](#step-3-configure-the-llm-prompt)
+  - [Step 4: Configure the Root Table](#step-4-configure-the-root-table)
+  - [Step 5: Add Simple Fields](#step-5-add-simple-fields)
+  - [Step 6: Add Array Fields](#step-6-add-array-fields-repeating-items)
+  - [Step 7: Choose the Right Merge Strategy](#step-7-choose-the-right-merge-strategy)
+  - [Step 8: Complete Example - Resume Schema](#step-8-complete-example---resume-schema)
+  - [Step 9: Activate Your Schema](#step-9-activate-your-schema)
+  - [Step 10: Verify and Test](#step-10-verify-and-test)
+  - [Quick Reference: Field Template](#quick-reference-field-template)
+  - [Common Mistakes to Avoid](#common-mistakes-to-avoid)
 - [Project Structure](#project-structure)
 
 ---
@@ -597,94 +605,193 @@ EEDF supports both **YAML** (recommended) and **JSON** schema files. YAML is pre
 
 ---
 
-### Schema Structure Tutorial
+## Building a Custom Extraction Schema from Scratch
 
-The extraction schema defines **what to extract** from documents and **how to store it** in SQLite. Here's a complete walkthrough.
+This tutorial walks you through creating a YAML extraction schema step-by-step. By the end, you'll understand how to extract any structured data from your documents.
 
-#### Top-Level Structure
+### Overview: What is an Extraction Schema?
 
-```yaml
-# Schema metadata
-name: my_schema          # Unique identifier
-version: 1               # Schema version number
-description: What this schema extracts.
+An extraction schema tells EEDF:
+1. **What to extract** - The fields and data you want from documents
+2. **How to prompt the LLM** - Instructions for the AI to find the data
+3. **How to store it** - Database tables and columns for the extracted data
+4. **How to merge chunks** - Strategy for combining data from large documents
 
-# LLM prompt configuration
-prompt:
-  system: You are an expert at analyzing documents.
-  instructions: >-
-    Extract all relevant information.
-    Return ONLY valid JSON, no other text.
+### Step 1: Plan What You Want to Extract
 
-# Root table configuration (main extraction record)
-root:
-  table: extractions           # Main table name
-  primary_key: id
-  document_fk:
-    column: document_id        # Foreign key to documents table
-    references: documents(id)
-  extra_columns:               # Additional columns for the root table
-    - name: extracted_at
-      type: TIMESTAMP
-      default: CURRENT_TIMESTAMP
+Before writing any YAML, answer these questions:
 
-# Fields to extract (see below)
-fields:
-  - name: field_name
-    # ... field definition
-```
+**Question 1: What type of documents are you processing?**
+- Contracts? Invoices? Medical records? Resumes?
+- This determines your `name` and `prompt.system`
 
-#### Field Types
+**Question 2: What single-value fields do you need?**
+- These are things that appear once per document
+- Examples: document date, title, total amount, customer name
+- These become columns in your **root table**
 
-EEDF supports these field types:
+**Question 3: What repeating items do you need?**
+- These are things that can appear multiple times
+- Examples: line items, people mentioned, clauses, skills
+- These become **child tables** with foreign keys
 
-| Type | Description | Example Value |
-|------|-------------|---------------|
-| `string` | Text value | `"Service Agreement"` |
-| `date` | Date string (YYYY-MM-DD preferred) | `"2024-01-15"` |
-| `integer` | Whole number | `42` |
-| `number` | Decimal number | `3.14` |
-| `boolean` | True/false | `true` |
-| `array` | List of items | `["item1", "item2"]` |
-| `object` | Nested structure | `{"key": "value"}` |
+**Question 4: For repeating items, what identifies a unique item?**
+- How do you know if two extracted items are the same?
+- Examples: party name, item description + quantity, clause type
+- This determines your `merge.key_fields`
 
 ---
 
-### Defining Simple Fields
+### Step 2: Create the File and Add Metadata
 
-Simple fields store a single value in the root table:
+Create a new file in the `config/` directory with a `.yaml` extension:
+
+```bash
+touch config/my_schema.yaml
+```
+
+Start with the basic metadata:
+
+```yaml
+# config/my_schema.yaml
+
+# Give your schema a unique name (used internally)
+name: my_document_type
+
+# Version number - increment when you make changes
+version: 1
+
+# Human-readable description
+description: Extract data from [your document type].
+```
+
+**Naming tips:**
+- Use `snake_case` for the name (e.g., `purchase_orders`, `employee_contracts`)
+- Keep the description short but informative
+
+---
+
+### Step 3: Configure the LLM Prompt
+
+The `prompt` section tells the AI how to analyze your documents:
+
+```yaml
+prompt:
+  # The system message sets the AI's role/expertise
+  system: You are an expert at analyzing [your document type].
+
+  # Instructions tell the AI what to do and how to format output
+  instructions: >-
+    Extract all relevant information accurately.
+    Use YYYY-MM-DD format for all dates.
+    If a field is not found in the document, use null.
+    Return ONLY valid JSON, no explanations or other text.
+```
+
+**Prompt tips:**
+- Be specific about the AI's expertise (e.g., "legal contract analyst", "financial document specialist")
+- Include formatting instructions (date formats, number formats)
+- Always include "Return ONLY valid JSON" to avoid parsing errors
+- The `>-` syntax allows multi-line strings without newline characters
+
+---
+
+### Step 4: Configure the Root Table
+
+The `root` section defines the main database table that links to documents:
+
+```yaml
+root:
+  # Name of the main table for extracted data
+  table: my_extractions
+
+  # Primary key (always use 'id')
+  primary_key: id
+
+  # Foreign key linking to the documents table
+  document_fk:
+    column: document_id
+    references: documents(id)
+
+  # Optional: extra columns for metadata
+  extra_columns:
+    - name: extracted_at
+      type: TIMESTAMP
+      default: CURRENT_TIMESTAMP
+```
+
+**Important:** The `table` name here will be used for all simple (non-array) fields. Choose a descriptive plural noun like `invoices`, `contracts`, `resumes`.
+
+---
+
+### Step 5: Add Simple Fields
+
+Simple fields extract a single value per document. They're stored in the root table.
 
 ```yaml
 fields:
-  # String field
-  - name: contract_type
-    type: string
-    description: Type of contract (e.g., NDA, Service Agreement).
+  # TEXT field - for any string value
+  - name: document_title        # Field name (used in JSON output)
+    type: string                # Data type
+    description: The title or heading of the document.  # Helps the LLM know what to look for
     sql:
-      table: contracts        # Store in root table
-      column: contract_type   # Column name
-      type: TEXT              # SQLite type
+      table: my_extractions     # Must match root.table for simple fields
+      column: document_title    # Column name in database
+      type: TEXT                # SQLite column type
     merge:
-      strategy: first_non_empty
+      strategy: first_non_empty # How to handle multiple chunks
+```
 
-  # Date field
-  - name: effective_date
-    type: date
-    description: Date when contract becomes effective (YYYY-MM-DD).
+**Available field types and their SQL types:**
+
+| Field Type | Description | SQL Type | Example |
+|------------|-------------|----------|---------|
+| `string` | Any text | `TEXT` | "Service Agreement" |
+| `date` | Date value | `TEXT` | "2024-01-15" |
+| `integer` | Whole number | `INTEGER` | 42 |
+| `number` | Decimal number | `REAL` | 1499.99 |
+| `boolean` | True/false | `INTEGER` | 1 or 0 |
+
+**Example: Adding multiple simple fields:**
+
+```yaml
+fields:
+  - name: document_type
+    type: string
+    description: Type of document (e.g., Invoice, Contract, Report).
     sql:
-      table: contracts
-      column: effective_date
+      table: my_extractions
+      column: document_type
       type: TEXT
     merge:
       strategy: first_non_empty
 
-  # Integer field
-  - name: total_value
-    type: integer
-    description: Total contract value in dollars.
+  - name: document_date
+    type: date
+    description: The date on the document (YYYY-MM-DD format).
     sql:
-      table: contracts
-      column: total_value
+      table: my_extractions
+      column: document_date
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  - name: total_amount
+    type: number
+    description: Total monetary amount mentioned.
+    sql:
+      table: my_extractions
+      column: total_amount
+      type: REAL
+    merge:
+      strategy: first_non_empty
+
+  - name: is_signed
+    type: boolean
+    description: Whether the document appears to be signed.
+    sql:
+      table: my_extractions
+      column: is_signed
       type: INTEGER
     merge:
       strategy: first_non_empty
@@ -692,136 +799,142 @@ fields:
 
 ---
 
-### Defining Array Fields
+### Step 6: Add Array Fields (Repeating Items)
 
-Array fields create **child tables** with foreign keys to the root table.
+Array fields extract multiple items and store them in a **separate child table**. There are two types:
 
-#### Simple Array (list of strings)
+#### Type A: Simple Array (List of Strings)
+
+Use when each item is just a single value:
 
 ```yaml
-- name: key_terms
-  type: array
-  description: Key terms and conditions.
-  items:
-    type: string                    # Each item is a string
-  sql:
-    table: key_terms                # Child table name
-    columns:
-      - name: term                  # Column for each item
-        type: TEXT
-    fk:
-      column: contract_id           # Foreign key column
-      references: contracts(id)     # References root table
-  merge:
-    strategy: union_unique          # Deduplicate across chunks
+  # Example: List of keywords or tags
+  - name: keywords
+    type: array
+    description: Key topics or tags mentioned in the document.
+    items:
+      type: string              # Each item is a simple string
+    sql:
+      table: keywords           # Creates a new child table
+      columns:
+        - name: keyword         # Column to store each string
+          type: TEXT
+      fk:
+        column: extraction_id   # Foreign key column name
+        references: my_extractions(id)  # References your root table
+    merge:
+      strategy: union_unique    # Deduplicates identical strings
 ```
 
-This creates a `key_terms` table:
+**This creates a table like:**
 ```sql
-CREATE TABLE key_terms (
+CREATE TABLE keywords (
     id INTEGER PRIMARY KEY,
-    contract_id INTEGER REFERENCES contracts(id),
-    term TEXT
+    extraction_id INTEGER REFERENCES my_extractions(id),
+    keyword TEXT
 );
 ```
 
-#### Array of Objects (structured items)
+#### Type B: Array of Objects (Structured Items)
+
+Use when each item has multiple properties:
 
 ```yaml
-- name: parties
-  type: array
-  description: Parties to the contract.
-  items:
-    type: object
-    unique_by: [name]               # Deduplication key
-    fields:
-      - name: name
-        type: string
-        description: Party name.
-      - name: role
-        type: string
-        description: Role in contract (e.g., Buyer, Seller).
-      - name: address
-        type: string
-        description: Address if mentioned.
-  sql:
-    table: parties
-    columns:
-      - name: name
-        type: TEXT
-      - name: role
-        type: TEXT
-      - name: address
-        type: TEXT
-    fk:
-      column: contract_id
-      references: contracts(id)
-  merge:
-    strategy: union_by_key
-    key_fields: [name]              # Merge by party name
+  # Example: People mentioned in the document
+  - name: people
+    type: array
+    description: People mentioned in the document.
+    items:
+      type: object
+      unique_by: [name]         # What makes each person unique
+      fields:
+        - name: name
+          type: string
+          description: Person's full name.
+        - name: role
+          type: string
+          description: Their role or title.
+        - name: email
+          type: string
+          description: Email address if mentioned.
+    sql:
+      table: people             # Creates a new child table
+      columns:
+        - name: name
+          type: TEXT
+        - name: role
+          type: TEXT
+        - name: email
+          type: TEXT
+      fk:
+        column: extraction_id
+        references: my_extractions(id)
+    merge:
+      strategy: union_by_key
+      key_fields: [name]        # Must match items.unique_by
 ```
 
-This creates a `parties` table:
+**This creates a table like:**
 ```sql
-CREATE TABLE parties (
+CREATE TABLE people (
     id INTEGER PRIMARY KEY,
-    contract_id INTEGER REFERENCES contracts(id),
+    extraction_id INTEGER REFERENCES my_extractions(id),
     name TEXT,
     role TEXT,
-    address TEXT
+    email TEXT
 );
 ```
 
 ---
 
-### Merge Strategies
+### Step 7: Choose the Right Merge Strategy
 
-When documents are split into chunks, each chunk may extract partial data. Merge strategies combine results:
+When documents are large, EEDF splits them into chunks. Each chunk is processed separately, then results are merged. Choose the right strategy:
 
-| Strategy | Use Case | Behavior |
-|----------|----------|----------|
-| `first_non_empty` | Single-value fields | Takes first non-null value found |
+| Strategy | Use For | What It Does |
+|----------|---------|--------------|
+| `first_non_empty` | Simple fields | Takes the first non-null value found |
 | `union_unique` | String arrays | Combines all unique strings |
-| `union_by_key` | Object arrays | Deduplicates by specified key fields |
-| `concat` | Arrays where duplicates are OK | Concatenates all items |
+| `union_by_key` | Object arrays | Deduplicates by key fields |
+| `concat` | Arrays where duplicates OK | Keeps all items, even duplicates |
 
-```yaml
-# For single values - take the first one found
-merge:
-  strategy: first_non_empty
+**Decision guide:**
 
-# For string arrays - combine unique values
-merge:
-  strategy: union_unique
+```
+Is it a simple field (not an array)?
+  → Use first_non_empty
 
-# For object arrays - deduplicate by key
-merge:
-  strategy: union_by_key
-  key_fields: [name, date]          # Composite key
+Is it an array of strings?
+  → Use union_unique
+
+Is it an array of objects?
+  → Do you want to deduplicate by some key?
+      Yes → Use union_by_key (and set key_fields)
+      No  → Use concat
 ```
 
 ---
 
-### Complete Example: Invoice Schema
+### Step 8: Complete Example - Resume Schema
 
-Here's a complete custom schema for extracting invoice data:
+Here's a complete schema for extracting data from resumes:
 
 ```yaml
-# config/invoice_schema.yaml
-name: invoice_extraction
+# config/resume_schema.yaml
+name: resume_extraction
 version: 1
-description: Extract structured data from invoices.
+description: Extract structured data from resumes and CVs.
 
 prompt:
-  system: You are an expert at analyzing invoices and financial documents.
+  system: You are an expert HR analyst skilled at parsing resumes and CVs.
   instructions: >-
-    Extract all invoice details accurately.
-    Use YYYY-MM-DD format for dates.
-    Use numeric values without currency symbols for amounts.
-    Return ONLY valid JSON.
+    Extract all relevant information from this resume.
+    Use YYYY-MM-DD format for dates. Use null for end_date if currently employed.
+    For skills, extract individual skill names, not categories.
+    Return ONLY valid JSON, no other text.
 
 root:
-  table: invoices
+  table: resumes
   primary_key: id
   document_fk:
     column: document_id
@@ -832,137 +945,311 @@ root:
       default: CURRENT_TIMESTAMP
 
 fields:
-  # Invoice metadata
-  - name: invoice_number
+  # === SIMPLE FIELDS (stored in resumes table) ===
+
+  - name: candidate_name
     type: string
-    description: The invoice number or ID.
+    description: Full name of the candidate.
     sql:
-      table: invoices
-      column: invoice_number
+      table: resumes
+      column: candidate_name
       type: TEXT
     merge:
       strategy: first_non_empty
 
-  - name: invoice_date
-    type: date
-    description: Date the invoice was issued (YYYY-MM-DD).
-    sql:
-      table: invoices
-      column: invoice_date
-      type: TEXT
-    merge:
-      strategy: first_non_empty
-
-  - name: due_date
-    type: date
-    description: Payment due date (YYYY-MM-DD).
-    sql:
-      table: invoices
-      column: due_date
-      type: TEXT
-    merge:
-      strategy: first_non_empty
-
-  # Amounts
-  - name: subtotal
-    type: number
-    description: Subtotal before tax.
-    sql:
-      table: invoices
-      column: subtotal
-      type: REAL
-    merge:
-      strategy: first_non_empty
-
-  - name: tax_amount
-    type: number
-    description: Total tax amount.
-    sql:
-      table: invoices
-      column: tax_amount
-      type: REAL
-    merge:
-      strategy: first_non_empty
-
-  - name: total_amount
-    type: number
-    description: Total amount due.
-    sql:
-      table: invoices
-      column: total_amount
-      type: REAL
-    merge:
-      strategy: first_non_empty
-
-  # Vendor and customer
-  - name: vendor_name
+  - name: email
     type: string
-    description: Name of the vendor/seller.
+    description: Email address.
     sql:
-      table: invoices
-      column: vendor_name
+      table: resumes
+      column: email
       type: TEXT
     merge:
       strategy: first_non_empty
 
-  - name: customer_name
+  - name: phone
     type: string
-    description: Name of the customer/buyer.
+    description: Phone number.
     sql:
-      table: invoices
-      column: customer_name
+      table: resumes
+      column: phone
       type: TEXT
     merge:
       strategy: first_non_empty
 
-  # Line items (child table)
-  - name: line_items
+  - name: location
+    type: string
+    description: City, state, or full address.
+    sql:
+      table: resumes
+      column: location
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  - name: summary
+    type: string
+    description: Professional summary or objective statement.
+    sql:
+      table: resumes
+      column: summary
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  - name: years_of_experience
+    type: integer
+    description: Total years of professional experience (estimate if not stated).
+    sql:
+      table: resumes
+      column: years_of_experience
+      type: INTEGER
+    merge:
+      strategy: first_non_empty
+
+  # === ARRAY FIELDS (stored in child tables) ===
+
+  # Simple string array
+  - name: skills
     type: array
-    description: Individual items on the invoice.
+    description: Technical and soft skills listed.
+    items:
+      type: string
+    sql:
+      table: resume_skills
+      columns:
+        - name: skill
+          type: TEXT
+      fk:
+        column: resume_id
+        references: resumes(id)
+    merge:
+      strategy: union_unique
+
+  # Object array - work experience
+  - name: work_experience
+    type: array
+    description: Employment history.
     items:
       type: object
-      unique_by: [description, quantity]
+      unique_by: [company, job_title, start_date]
       fields:
+        - name: company
+          type: string
+          description: Company or organization name.
+        - name: job_title
+          type: string
+          description: Job title or position.
+        - name: start_date
+          type: date
+          description: Start date (YYYY-MM-DD or YYYY-MM).
+        - name: end_date
+          type: date
+          description: End date (YYYY-MM-DD, YYYY-MM, or null if current).
         - name: description
           type: string
-          description: Item description.
-        - name: quantity
-          type: number
-          description: Quantity ordered.
-        - name: unit_price
-          type: number
-          description: Price per unit.
-        - name: line_total
-          type: number
-          description: Total for this line item.
+          description: Brief description of responsibilities.
     sql:
-      table: invoice_line_items
+      table: work_experience
       columns:
+        - name: company
+          type: TEXT
+        - name: job_title
+          type: TEXT
+        - name: start_date
+          type: TEXT
+        - name: end_date
+          type: TEXT
         - name: description
           type: TEXT
-        - name: quantity
-          type: REAL
-        - name: unit_price
-          type: REAL
-        - name: line_total
-          type: REAL
       fk:
-        column: invoice_id
-        references: invoices(id)
+        column: resume_id
+        references: resumes(id)
     merge:
       strategy: union_by_key
-      key_fields: [description, quantity]
+      key_fields: [company, job_title, start_date]
+
+  # Object array - education
+  - name: education
+    type: array
+    description: Educational background.
+    items:
+      type: object
+      unique_by: [institution, degree]
+      fields:
+        - name: institution
+          type: string
+          description: School, university, or institution name.
+        - name: degree
+          type: string
+          description: Degree or certification earned.
+        - name: field_of_study
+          type: string
+          description: Major or field of study.
+        - name: graduation_date
+          type: date
+          description: Graduation date or expected graduation.
+    sql:
+      table: education
+      columns:
+        - name: institution
+          type: TEXT
+        - name: degree
+          type: TEXT
+        - name: field_of_study
+          type: TEXT
+        - name: graduation_date
+          type: TEXT
+      fk:
+        column: resume_id
+        references: resumes(id)
+    merge:
+      strategy: union_by_key
+      key_fields: [institution, degree]
+
+  # Simple string array
+  - name: certifications
+    type: array
+    description: Professional certifications.
+    items:
+      type: string
+    sql:
+      table: certifications
+      columns:
+        - name: certification
+          type: TEXT
+      fk:
+        column: resume_id
+        references: resumes(id)
+    merge:
+      strategy: union_unique
 ```
 
-#### Using the Custom Schema
+---
 
+### Step 9: Activate Your Schema
+
+Once your schema file is ready:
+
+**Option A: Set environment variable**
 ```bash
-# Set the schema path
-export EXTRACTION_SCHEMA_PATH=config/invoice_schema.yaml
-
-# Start the server
+export EXTRACTION_SCHEMA_PATH=config/resume_schema.yaml
 uv run uvicorn eedf.main:app --reload
 ```
+
+**Option B: Add to .env file**
+```bash
+echo "EXTRACTION_SCHEMA_PATH=config/resume_schema.yaml" >> .env
+uv run uvicorn eedf.main:app --reload
+```
+
+**Option C: Replace the default schema**
+```bash
+cp config/resume_schema.yaml config/extraction_schema.yaml
+uv run uvicorn eedf.main:app --reload
+```
+
+---
+
+### Step 10: Verify and Test
+
+1. **Check for startup errors** - If your schema has issues, you'll see errors when starting the server
+
+2. **Upload a test document** - Go to http://localhost:8000 and upload a document
+
+3. **Check the extracted data** - Click on the document to see what was extracted
+
+4. **Query the database** - Use the SQL Explorer to verify data:
+   ```sql
+   -- See all tables
+   SELECT name FROM sqlite_master WHERE type='table';
+
+   -- Check extracted data
+   SELECT * FROM resumes LIMIT 5;
+   SELECT * FROM resume_skills LIMIT 10;
+   ```
+
+5. **Iterate** - Adjust field descriptions to improve extraction accuracy
+
+---
+
+### Quick Reference: Field Template
+
+Copy this template for each field:
+
+**Simple field:**
+```yaml
+  - name: field_name
+    type: string  # or: date, integer, number, boolean
+    description: Clear description of what this field should contain.
+    sql:
+      table: root_table_name  # Must match root.table
+      column: column_name
+      type: TEXT  # or: INTEGER, REAL
+    merge:
+      strategy: first_non_empty
+```
+
+**String array:**
+```yaml
+  - name: items_name
+    type: array
+    description: Description of what items to extract.
+    items:
+      type: string
+    sql:
+      table: child_table_name
+      columns:
+        - name: item
+          type: TEXT
+      fk:
+        column: parent_id
+        references: root_table_name(id)
+    merge:
+      strategy: union_unique
+```
+
+**Object array:**
+```yaml
+  - name: entities_name
+    type: array
+    description: Description of the entities to extract.
+    items:
+      type: object
+      unique_by: [key_field1, key_field2]
+      fields:
+        - name: field1
+          type: string
+          description: Description.
+        - name: field2
+          type: string
+          description: Description.
+    sql:
+      table: child_table_name
+      columns:
+        - name: field1
+          type: TEXT
+        - name: field2
+          type: TEXT
+      fk:
+        column: parent_id
+        references: root_table_name(id)
+    merge:
+      strategy: union_by_key
+      key_fields: [key_field1, key_field2]
+```
+
+---
+
+### Common Mistakes to Avoid
+
+| Mistake | Problem | Fix |
+|---------|---------|-----|
+| Simple field `sql.table` doesn't match `root.table` | Field won't be stored correctly | Use the same table name as `root.table` |
+| Missing `fk` in array field | Child table won't link to parent | Add `fk.column` and `fk.references` |
+| `key_fields` don't match `unique_by` | Inconsistent deduplication | Keep them identical |
+| Forgetting `merge` section | Unpredictable behavior with large docs | Always specify a merge strategy |
+| Vague field descriptions | Poor extraction accuracy | Be specific about what to look for |
 
 ---
 
