@@ -1,0 +1,198 @@
+# Contract/Legal Document Extraction Schema
+# This schema defines what fields to extract from documents and how to store them in SQLite.
+
+name: contract_legal
+version: 1
+description: Default contract/legal extraction schema.
+
+# Prompt configuration for the LLM
+prompt:
+  system: You are a legal document analysis expert.
+  instructions: >-
+    Be thorough and extract all relevant information.
+    If a field is not found, use null or an empty array.
+    Return ONLY valid JSON, no other text.
+
+# Root table configuration
+root:
+  table: contracts
+  primary_key: id
+  document_fk:
+    column: document_id
+    references: documents(id)
+  extra_columns:
+    - name: extracted_at
+      type: TIMESTAMP
+      default: CURRENT_TIMESTAMP
+
+# Fields to extract
+fields:
+  # Contract type (e.g., Service Agreement, NDA, Employment Contract)
+  - name: contract_type
+    type: string
+    description: Type of contract (e.g., Service Agreement, NDA, Employment Contract).
+    sql:
+      table: contracts
+      column: contract_type
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  # Parties involved in the contract
+  - name: parties
+    type: array
+    description: Parties to the contract.
+    items:
+      type: object
+      unique_by: [name]
+      fields:
+        - name: name
+          type: string
+          description: Party name.
+        - name: role
+          type: string
+          description: Role in contract.
+        - name: address
+          type: string
+          description: Address if mentioned.
+    sql:
+      table: parties
+      columns:
+        - name: name
+          type: TEXT
+        - name: role
+          type: TEXT
+        - name: address
+          type: TEXT
+      fk:
+        column: contract_id
+        references: contracts(id)
+    merge:
+      strategy: union_by_key
+      key_fields: [name]
+
+  # Important dates
+  - name: effective_date
+    type: date
+    description: Date when contract becomes effective (YYYY-MM-DD if possible).
+    sql:
+      table: contracts
+      column: effective_date
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  - name: termination_date
+    type: date
+    description: Date when contract ends (YYYY-MM-DD if possible).
+    sql:
+      table: contracts
+      column: termination_date
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  # Key terms and conditions
+  - name: key_terms
+    type: array
+    description: Key terms and conditions.
+    items:
+      type: string
+    sql:
+      table: key_terms
+      columns:
+        - name: term
+          type: TEXT
+      fk:
+        column: contract_id
+        references: contracts(id)
+    merge:
+      strategy: union_unique
+
+  # Obligations
+  - name: obligations
+    type: array
+    description: Obligations from the contract.
+    items:
+      type: object
+      unique_by: [party, description]
+      fields:
+        - name: party
+          type: string
+          description: Party name.
+        - name: description
+          type: string
+          description: What they must do.
+        - name: due_date
+          type: date
+          description: Deadline if any.
+        - name: status
+          type: string
+          description: Status (active, completed, etc.).
+    sql:
+      table: obligations
+      columns:
+        - name: party
+          type: TEXT
+        - name: description
+          type: TEXT
+        - name: due_date
+          type: TEXT
+        - name: status
+          type: TEXT
+      fk:
+        column: contract_id
+        references: contracts(id)
+    merge:
+      strategy: union_by_key
+      key_fields: [party, description]
+
+  # Legal clauses
+  - name: clauses
+    type: array
+    description: Legal clauses (confidentiality, termination, liability, etc.).
+    items:
+      type: object
+      unique_by: [clause_type, clause_text]
+      fields:
+        - name: clause_type
+          type: string
+          description: Clause type.
+        - name: clause_text
+          type: string
+          description: Summary of clause.
+        - name: section_reference
+          type: string
+          description: Section number if mentioned.
+    sql:
+      table: clauses
+      columns:
+        - name: clause_type
+          type: TEXT
+        - name: clause_text
+          type: TEXT
+        - name: section_reference
+          type: TEXT
+      fk:
+        column: contract_id
+        references: contracts(id)
+    merge:
+      strategy: union_by_key
+      key_fields: [clause_type, clause_text]
+
+  # Signatories
+  - name: signatures
+    type: array
+    description: Signatories mentioned.
+    items:
+      type: string
+    sql:
+      table: signatures
+      columns:
+        - name: signatory
+          type: TEXT
+      fk:
+        column: contract_id
+        references: contracts(id)
+    merge:
+      strategy: union_unique

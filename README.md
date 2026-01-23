@@ -24,6 +24,13 @@ A Python application that leverages Google Gemini LLM to extract structured data
 - [How It Works](#how-it-works)
 - [API Reference](#api-reference)
 - [Database Schema](#database-schema)
+- [Schema & Migration Plan](#schema--migration-plan)
+  - [Schema File Format](#schema-file-format)
+  - [Schema Structure Tutorial](#schema-structure-tutorial)
+  - [Defining Simple Fields](#defining-simple-fields)
+  - [Defining Array Fields](#defining-array-fields)
+  - [Merge Strategies](#merge-strategies)
+  - [Complete Example: Invoice Schema](#complete-example-invoice-schema)
 - [Project Structure](#project-structure)
 
 ---
@@ -193,6 +200,8 @@ $env:GOOGLE_API_KEY="your_gemini_api_key"
 | `LLM_MODEL` | `gemini-3-flash-preview` | Gemini model to use |
 | `MAX_CHUNK_SIZE` | 8000 | Maximum characters per chunk |
 | `CHUNK_OVERLAP` | 500 | Overlap between chunks |
+| `DATABASE_PATH` | `data/extractions.db` | SQLite database path |
+| `EXTRACTION_SCHEMA_PATH` | `config/extraction_schema.yaml` | Active extraction schema file (YAML or JSON) |
 
 ---
 
@@ -260,7 +269,7 @@ sequenceDiagram
     end
 
     Agent->>Agent: Merge extractions
-    Agent->>DB: Save contract, obligations, clauses
+    Agent->>DB: Save schema-based rows
     Agent->>DB: Update status (completed)
 
     UI->>API: Poll GET /api/documents
@@ -288,9 +297,8 @@ stateDiagram-v2
     MergeResults: Combine clauses
 
     SaveDB: save_to_database_node
-    SaveDB: Insert contract record
-    SaveDB: Insert obligations
-    SaveDB: Insert clauses
+    SaveDB: Insert root record
+    SaveDB: Insert child rows per schema
     SaveDB: Update document status
 
     ChunkDocument --> ExtractInfo
@@ -310,7 +318,7 @@ flowchart LR
         S3[file_type: str]
         S4[chunks: list]
         S5[raw_extractions: list]
-        S6[contract_data: ContractExtraction]
+        S6[extraction_data: JSON]
         S7[status: str]
         S8[error: Optional str]
     end
@@ -380,44 +388,17 @@ flowchart TD
     MERGE --> FINAL
 ```
 
-### Extraction Data Model
+### Extraction Data Model (Default Schema)
 
-```mermaid
-classDiagram
-    class ContractExtraction {
-        +str contract_type
-        +List~Party~ parties
-        +str effective_date
-        +str termination_date
-        +List~str~ key_terms
-        +List~Obligation~ obligations
-        +List~Clause~ clauses
-        +List~str~ signatures
-    }
+The default schema is defined in `config/extraction_schema.yaml` and extracts:
 
-    class Party {
-        +str name
-        +str role
-        +str address
-    }
-
-    class Obligation {
-        +str party
-        +str description
-        +str due_date
-        +str status
-    }
-
-    class Clause {
-        +str clause_type
-        +str clause_text
-        +str section_reference
-    }
-
-    ContractExtraction "1" --> "*" Party
-    ContractExtraction "1" --> "*" Obligation
-    ContractExtraction "1" --> "*" Clause
-```
+- `contract_type` (string)
+- `parties` (array of objects)
+- `effective_date`, `termination_date` (string)
+- `key_terms` (array of string)
+- `obligations` (array of objects)
+- `clauses` (array of objects)
+- `signatures` (array of string)
 
 ---
 
@@ -433,14 +414,16 @@ flowchart LR
         E3["GET /api/documents"]
         E4["GET /api/documents/{id}"]
         E5["POST /api/sql"]
+        E6["GET /api/schema"]
     end
 
     subgraph Responses["Responses"]
         R1[HTML Page]
         R2[UploadResponse]
         R3[DocumentRecord List]
-        R4[DocumentWithContract]
+        R4[DocumentWithExtraction]
         R5[SQLQueryResponse]
+        R6[ExtractionSchema]
     end
 
     E1 --> R1
@@ -448,6 +431,7 @@ flowchart LR
     E3 --> R3
     E4 --> R4
     E5 --> R5
+    E6 --> R6
 ```
 
 ### Endpoint Details
@@ -457,7 +441,8 @@ flowchart LR
 | `/` | GET | Serve web UI | - | HTML |
 | `/api/upload` | POST | Upload document | `multipart/form-data` | `{document_id, filename, status, message}` |
 | `/api/documents` | GET | List all documents | - | `{documents: DocumentRecord[]}` |
-| `/api/documents/{id}` | GET | Get document details | Path: `id` | `DocumentWithContract` |
+| `/api/documents/{id}` | GET | Get document details | Path: `id` | `DocumentWithExtraction` |
+| `/api/schema` | GET | Get active extraction schema | - | JSON schema |
 | `/api/sql` | POST | Execute SQL query | `{query: string}` | `{columns, rows, row_count}` |
 
 ### Upload Response
@@ -486,13 +471,18 @@ stateDiagram-v2
 
 ## Database Schema
 
+Database tables are generated from the active schema file (`EXTRACTION_SCHEMA_PATH`). The diagram below reflects the **default** schema in `config/extraction_schema.json`.
+
 ### Entity Relationship Diagram
 
 ```mermaid
 erDiagram
     documents ||--o| contracts : "has"
+    contracts ||--o{ parties : "contains"
     contracts ||--o{ obligations : "contains"
     contracts ||--o{ clauses : "contains"
+    contracts ||--o{ key_terms : "contains"
+    contracts ||--o{ signatures : "contains"
 
     documents {
         int id PK
@@ -507,10 +497,17 @@ erDiagram
         int id PK
         int document_id FK
         string contract_type
-        json parties
         string effective_date
         string termination_date
         timestamp extracted_at
+    }
+
+    parties {
+        int id PK
+        int contract_id FK
+        string name
+        string role
+        string address
     }
 
     obligations {
@@ -529,6 +526,18 @@ erDiagram
         text clause_text
         string section_reference
     }
+
+    key_terms {
+        int id PK
+        int contract_id FK
+        string term
+    }
+
+    signatures {
+        int id PK
+        int contract_id FK
+        string signatory
+    }
 ```
 
 ### Table Descriptions
@@ -536,9 +545,12 @@ erDiagram
 | Table | Purpose | Key Fields |
 |-------|---------|------------|
 | `documents` | Uploaded files and raw text | filename, status, raw_text |
-| `contracts` | Extracted contract metadata | contract_type, parties (JSON), dates |
+| `contracts` | Extracted contract metadata | contract_type, dates |
+| `parties` | Contract parties | name, role, address |
 | `obligations` | Party obligations | party, description, due_date |
 | `clauses` | Legal clauses | clause_type, clause_text |
+| `key_terms` | Key terms | term |
+| `signatures` | Signatories | signatory |
 
 ### Sample SQL Queries
 
@@ -562,6 +574,418 @@ ORDER BY count DESC;
 ```
 
 ---
+
+## Schema & Migration Plan
+
+This app uses a single active extraction schema defined by `EXTRACTION_SCHEMA_PATH` (default: `config/extraction_schema.yaml`). On startup, EEDF:
+
+1. Creates any missing tables for the schema.
+2. Adds any missing columns to existing tables.
+3. Records the schema hash in `schema_meta`.
+
+### Schema File Format
+
+EEDF supports both **YAML** (recommended) and **JSON** schema files. YAML is preferred for human editing due to:
+
+| Feature | JSON | YAML |
+|---------|------|------|
+| Comments | Not allowed | `# comment` supported |
+| Quoting | Required for all strings | Optional for most |
+| Multi-line strings | Escaped `\n` | Native block scalars |
+| Visual nesting | Brackets `{}[]` | Indentation |
+| Trailing commas | Syntax error | Not needed |
+
+---
+
+### Schema Structure Tutorial
+
+The extraction schema defines **what to extract** from documents and **how to store it** in SQLite. Here's a complete walkthrough.
+
+#### Top-Level Structure
+
+```yaml
+# Schema metadata
+name: my_schema          # Unique identifier
+version: 1               # Schema version number
+description: What this schema extracts.
+
+# LLM prompt configuration
+prompt:
+  system: You are an expert at analyzing documents.
+  instructions: >-
+    Extract all relevant information.
+    Return ONLY valid JSON, no other text.
+
+# Root table configuration (main extraction record)
+root:
+  table: extractions           # Main table name
+  primary_key: id
+  document_fk:
+    column: document_id        # Foreign key to documents table
+    references: documents(id)
+  extra_columns:               # Additional columns for the root table
+    - name: extracted_at
+      type: TIMESTAMP
+      default: CURRENT_TIMESTAMP
+
+# Fields to extract (see below)
+fields:
+  - name: field_name
+    # ... field definition
+```
+
+#### Field Types
+
+EEDF supports these field types:
+
+| Type | Description | Example Value |
+|------|-------------|---------------|
+| `string` | Text value | `"Service Agreement"` |
+| `date` | Date string (YYYY-MM-DD preferred) | `"2024-01-15"` |
+| `integer` | Whole number | `42` |
+| `number` | Decimal number | `3.14` |
+| `boolean` | True/false | `true` |
+| `array` | List of items | `["item1", "item2"]` |
+| `object` | Nested structure | `{"key": "value"}` |
+
+---
+
+### Defining Simple Fields
+
+Simple fields store a single value in the root table:
+
+```yaml
+fields:
+  # String field
+  - name: contract_type
+    type: string
+    description: Type of contract (e.g., NDA, Service Agreement).
+    sql:
+      table: contracts        # Store in root table
+      column: contract_type   # Column name
+      type: TEXT              # SQLite type
+    merge:
+      strategy: first_non_empty
+
+  # Date field
+  - name: effective_date
+    type: date
+    description: Date when contract becomes effective (YYYY-MM-DD).
+    sql:
+      table: contracts
+      column: effective_date
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  # Integer field
+  - name: total_value
+    type: integer
+    description: Total contract value in dollars.
+    sql:
+      table: contracts
+      column: total_value
+      type: INTEGER
+    merge:
+      strategy: first_non_empty
+```
+
+---
+
+### Defining Array Fields
+
+Array fields create **child tables** with foreign keys to the root table.
+
+#### Simple Array (list of strings)
+
+```yaml
+- name: key_terms
+  type: array
+  description: Key terms and conditions.
+  items:
+    type: string                    # Each item is a string
+  sql:
+    table: key_terms                # Child table name
+    columns:
+      - name: term                  # Column for each item
+        type: TEXT
+    fk:
+      column: contract_id           # Foreign key column
+      references: contracts(id)     # References root table
+  merge:
+    strategy: union_unique          # Deduplicate across chunks
+```
+
+This creates a `key_terms` table:
+```sql
+CREATE TABLE key_terms (
+    id INTEGER PRIMARY KEY,
+    contract_id INTEGER REFERENCES contracts(id),
+    term TEXT
+);
+```
+
+#### Array of Objects (structured items)
+
+```yaml
+- name: parties
+  type: array
+  description: Parties to the contract.
+  items:
+    type: object
+    unique_by: [name]               # Deduplication key
+    fields:
+      - name: name
+        type: string
+        description: Party name.
+      - name: role
+        type: string
+        description: Role in contract (e.g., Buyer, Seller).
+      - name: address
+        type: string
+        description: Address if mentioned.
+  sql:
+    table: parties
+    columns:
+      - name: name
+        type: TEXT
+      - name: role
+        type: TEXT
+      - name: address
+        type: TEXT
+    fk:
+      column: contract_id
+      references: contracts(id)
+  merge:
+    strategy: union_by_key
+    key_fields: [name]              # Merge by party name
+```
+
+This creates a `parties` table:
+```sql
+CREATE TABLE parties (
+    id INTEGER PRIMARY KEY,
+    contract_id INTEGER REFERENCES contracts(id),
+    name TEXT,
+    role TEXT,
+    address TEXT
+);
+```
+
+---
+
+### Merge Strategies
+
+When documents are split into chunks, each chunk may extract partial data. Merge strategies combine results:
+
+| Strategy | Use Case | Behavior |
+|----------|----------|----------|
+| `first_non_empty` | Single-value fields | Takes first non-null value found |
+| `union_unique` | String arrays | Combines all unique strings |
+| `union_by_key` | Object arrays | Deduplicates by specified key fields |
+| `concat` | Arrays where duplicates are OK | Concatenates all items |
+
+```yaml
+# For single values - take the first one found
+merge:
+  strategy: first_non_empty
+
+# For string arrays - combine unique values
+merge:
+  strategy: union_unique
+
+# For object arrays - deduplicate by key
+merge:
+  strategy: union_by_key
+  key_fields: [name, date]          # Composite key
+```
+
+---
+
+### Complete Example: Invoice Schema
+
+Here's a complete custom schema for extracting invoice data:
+
+```yaml
+# config/invoice_schema.yaml
+name: invoice_extraction
+version: 1
+description: Extract structured data from invoices.
+
+prompt:
+  system: You are an expert at analyzing invoices and financial documents.
+  instructions: >-
+    Extract all invoice details accurately.
+    Use YYYY-MM-DD format for dates.
+    Use numeric values without currency symbols for amounts.
+    Return ONLY valid JSON.
+
+root:
+  table: invoices
+  primary_key: id
+  document_fk:
+    column: document_id
+    references: documents(id)
+  extra_columns:
+    - name: extracted_at
+      type: TIMESTAMP
+      default: CURRENT_TIMESTAMP
+
+fields:
+  # Invoice metadata
+  - name: invoice_number
+    type: string
+    description: The invoice number or ID.
+    sql:
+      table: invoices
+      column: invoice_number
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  - name: invoice_date
+    type: date
+    description: Date the invoice was issued (YYYY-MM-DD).
+    sql:
+      table: invoices
+      column: invoice_date
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  - name: due_date
+    type: date
+    description: Payment due date (YYYY-MM-DD).
+    sql:
+      table: invoices
+      column: due_date
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  # Amounts
+  - name: subtotal
+    type: number
+    description: Subtotal before tax.
+    sql:
+      table: invoices
+      column: subtotal
+      type: REAL
+    merge:
+      strategy: first_non_empty
+
+  - name: tax_amount
+    type: number
+    description: Total tax amount.
+    sql:
+      table: invoices
+      column: tax_amount
+      type: REAL
+    merge:
+      strategy: first_non_empty
+
+  - name: total_amount
+    type: number
+    description: Total amount due.
+    sql:
+      table: invoices
+      column: total_amount
+      type: REAL
+    merge:
+      strategy: first_non_empty
+
+  # Vendor and customer
+  - name: vendor_name
+    type: string
+    description: Name of the vendor/seller.
+    sql:
+      table: invoices
+      column: vendor_name
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  - name: customer_name
+    type: string
+    description: Name of the customer/buyer.
+    sql:
+      table: invoices
+      column: customer_name
+      type: TEXT
+    merge:
+      strategy: first_non_empty
+
+  # Line items (child table)
+  - name: line_items
+    type: array
+    description: Individual items on the invoice.
+    items:
+      type: object
+      unique_by: [description, quantity]
+      fields:
+        - name: description
+          type: string
+          description: Item description.
+        - name: quantity
+          type: number
+          description: Quantity ordered.
+        - name: unit_price
+          type: number
+          description: Price per unit.
+        - name: line_total
+          type: number
+          description: Total for this line item.
+    sql:
+      table: invoice_line_items
+      columns:
+        - name: description
+          type: TEXT
+        - name: quantity
+          type: REAL
+        - name: unit_price
+          type: REAL
+        - name: line_total
+          type: REAL
+      fk:
+        column: invoice_id
+        references: invoices(id)
+    merge:
+      strategy: union_by_key
+      key_fields: [description, quantity]
+```
+
+#### Using the Custom Schema
+
+```bash
+# Set the schema path
+export EXTRACTION_SCHEMA_PATH=config/invoice_schema.yaml
+
+# Start the server
+uv run uvicorn eedf.main:app --reload
+```
+
+---
+
+### Changing to a Different Extraction Schema
+
+1. Copy the default schema file and update fields, merge strategies, and SQL mappings.
+2. Set `EXTRACTION_SCHEMA_PATH` to point at the new schema file.
+3. Restart the server to apply schema changes.
+
+### Breaking Changes (Renames/Drops)
+
+Automatic migration is **additive only**. For renames or removals:
+
+- **Recommended**: start a new database by setting `DATABASE_PATH` to a new file and reprocess documents.
+- **Advanced**: perform manual SQL migrations (rename table/column, move data) before starting the server.
+
+### Tips for Custom Schemas
+
+- Prefer stable table/column names early.
+- Use array fields for repeatable entities and map them to child tables.
+- Keep one active schema per deployment to avoid conflicting table definitions.
+- Add descriptive comments in YAML to document field purposes.
+- Test with a few documents before processing large batches.
 
 ## Project Structure
 
@@ -620,6 +1044,7 @@ flowchart TB
 | `extraction_agent.py` | LangGraph workflow definition and node implementations |
 | `generate_test_docs.py` | Synthetic test document generator |
 | `static/index.html` | Single-page web application |
+| `config/extraction_schema.yaml` | Active extraction schema (tables, fields, prompt) - YAML or JSON supported |
 
 ---
 

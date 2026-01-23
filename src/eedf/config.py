@@ -2,7 +2,6 @@
 
 import os
 from pathlib import Path
-
 from dotenv import load_dotenv
 
 # Base paths - go up from src/eedf/config.py to project root
@@ -18,7 +17,20 @@ DATA_DIR.mkdir(exist_ok=True)
 TEST_DOCS_DIR.mkdir(exist_ok=True)
 
 # Database
-DATABASE_PATH = DATA_DIR / "extractions.db"
+DATABASE_PATH = Path(
+    os.environ.get(
+        "DATABASE_PATH",
+        str(DATA_DIR / "extractions.db"),
+    )
+)
+
+# Extraction schema
+EXTRACTION_SCHEMA_PATH = Path(
+    os.environ.get(
+        "EXTRACTION_SCHEMA_PATH",
+        str(BASE_DIR / "config" / "extraction_schema.yaml"),
+    )
+)
 
 # Google Gemini API
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
