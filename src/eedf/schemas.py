@@ -179,3 +179,37 @@ class SchemaSaveResponse(BaseModel):
     success: bool
     message: str
     validation: SchemaValidationResponse
+
+
+# Chat Agent API Models
+
+
+class ChatMessage(BaseModel):
+    """A single chat message."""
+
+    role: str  # "user" or "assistant"
+    content: str
+
+
+class ChatRequest(BaseModel):
+    """Request to the chat agent."""
+
+    message: str
+    history: Optional[list[ChatMessage]] = None
+
+
+class ChatStepResponse(BaseModel):
+    """A single step in the agent's reasoning."""
+
+    thought: str
+    action: Optional[str] = None
+    action_input: Optional[str] = None
+    observation: Optional[str] = None
+
+
+class ChatResponse(BaseModel):
+    """Response from the chat agent."""
+
+    answer: str
+    steps: list[ChatStepResponse] = []
+    error: Optional[str] = None

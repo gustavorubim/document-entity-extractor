@@ -1108,6 +1108,323 @@
             display: inline-block;
         }
 
+        /* Database Chat Styles */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 180px);
+            max-height: 800px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chat-message {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .chat-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .chat-message.user .chat-avatar {
+            background: #3498db;
+            color: white;
+        }
+
+        .chat-message.assistant .chat-avatar {
+            background: #27ae60;
+            color: white;
+        }
+
+        .chat-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .chat-message.user .chat-bubble {
+            background: #3498db;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-message.assistant .chat-bubble {
+            background: #f8f9fa;
+            color: #2c3e50;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-bubble p {
+            margin-bottom: 8px;
+        }
+
+        .chat-bubble p:last-child {
+            margin-bottom: 0;
+        }
+
+        .chat-bubble code {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85em;
+        }
+
+        .chat-bubble pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 8px 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+        }
+
+        .chat-bubble pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .chat-thinking {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #7f8c8d;
+            font-size: 0.85rem;
+            padding: 12px;
+        }
+
+        .chat-thinking-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .chat-thinking-dots span {
+            width: 6px;
+            height: 6px;
+            background: #7f8c8d;
+            border-radius: 50%;
+            animation: chatPulse 1.4s infinite ease-in-out both;
+        }
+
+        .chat-thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .chat-thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes chatPulse {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            font-size: 0.9rem;
+            resize: none;
+            min-height: 48px;
+            max-height: 120px;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .chat-send-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 50%;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .chat-send-btn:hover {
+            background: #2980b9;
+        }
+
+        .chat-send-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .chat-send-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .chat-steps-toggle {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .chat-steps-toggle:hover {
+            color: #2980b9;
+        }
+
+        .chat-steps {
+            margin-top: 8px;
+            padding: 12px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .chat-steps.show {
+            display: block;
+        }
+
+        .chat-step {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .chat-step:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .chat-step-thought {
+            color: #8e44ad;
+            margin-bottom: 4px;
+        }
+
+        .chat-step-action {
+            color: #2980b9;
+            font-family: 'Monaco', 'Menlo', monospace;
+            margin-bottom: 4px;
+        }
+
+        .chat-step-observation {
+            color: #27ae60;
+            background: #e8f8f0;
+            padding: 8px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-family: 'Monaco', 'Menlo', monospace;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .chat-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .chat-suggestion {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #555;
+            transition: all 0.2s;
+        }
+
+        .chat-suggestion:hover {
+            background: #e8f4fd;
+            border-color: #3498db;
+            color: #2980b9;
+        }
+
+        .chat-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #7f8c8d;
+            text-align: center;
+        }
+
+        .chat-empty svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .chat-empty h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .chat-empty p {
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        .chat-clear-btn {
+            padding: 8px 16px;
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            transition: all 0.2s;
+        }
+
+        .chat-clear-btn:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
         /* Mobile Responsiveness */
         @media screen and (max-width: 768px) {
             body {
@@ -1366,6 +1683,12 @@
                 <span>Schema Designer</span>
                 <span class="dirty-indicator" id="schema-dirty-indicator"></span>
             </div>
+            <div class="nav-item" data-section="chat">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span>Database Chat</span>
+            </div>
         </div>
     </nav>
 
@@ -1592,6 +1915,40 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Database Chat Section -->
+        <section id="chat-section" class="section">
+            <header class="content-header">
+                <h2>Database Chat</h2>
+            </header>
+            <div class="content-body">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-empty" id="chat-empty">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <h3>Ask questions about your data</h3>
+                            <p>I can help you explore and analyze the documents in your database using natural language.</p>
+                            <div class="chat-suggestions" id="chat-suggestions">
+                                <button class="chat-suggestion">How many documents are in the database?</button>
+                                <button class="chat-suggestion">Show me all contract types</button>
+                                <button class="chat-suggestion">List all parties and their roles</button>
+                                <button class="chat-suggestion">What obligations are pending?</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <textarea class="chat-input" id="chat-input" placeholder="Ask a question about your data..." rows="1"></textarea>
+                        <button class="chat-send-btn" id="chat-send-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2988,6 +3345,213 @@
                 e.returnValue = '';
             }
         });
+
+        // ===== DATABASE CHAT =====
+
+        // Chat state
+        const chatState = {
+            messages: [],
+            isLoading: false
+        };
+
+        // Chat DOM elements
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSendBtn = document.getElementById('chat-send-btn');
+        const chatEmpty = document.getElementById('chat-empty');
+        const chatSuggestions = document.getElementById('chat-suggestions');
+
+        // Auto-resize textarea
+        chatInput.addEventListener('input', () => {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+        });
+
+        // Send on Enter (Shift+Enter for new line)
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+
+        // Send button click
+        chatSendBtn.addEventListener('click', sendChatMessage);
+
+        // Suggestion clicks
+        chatSuggestions.addEventListener('click', (e) => {
+            if (e.target.classList.contains('chat-suggestion')) {
+                chatInput.value = e.target.textContent;
+                sendChatMessage();
+            }
+        });
+
+        // Send chat message
+        async function sendChatMessage() {
+            const message = chatInput.value.trim();
+            if (!message || chatState.isLoading) return;
+
+            // Clear input
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+
+            // Hide empty state
+            chatEmpty.style.display = 'none';
+
+            // Add user message
+            chatState.messages.push({ role: 'user', content: message });
+            renderChatMessage({ role: 'user', content: message });
+
+            // Show loading
+            chatState.isLoading = true;
+            chatSendBtn.disabled = true;
+            const thinkingEl = showChatThinking();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        history: chatState.messages.slice(-10)  // Send last 10 messages for context
+                    })
+                });
+
+                const data = await response.json();
+
+                // Remove thinking indicator
+                thinkingEl.remove();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to get response');
+                }
+
+                // Add assistant message
+                chatState.messages.push({ role: 'assistant', content: data.answer });
+                renderChatMessage({ role: 'assistant', content: data.answer, steps: data.steps });
+
+            } catch (error) {
+                thinkingEl.remove();
+                renderChatMessage({
+                    role: 'assistant',
+                    content: 'Sorry, I encountered an error: ' + escapeHtml(error.message)
+                });
+            } finally {
+                chatState.isLoading = false;
+                chatSendBtn.disabled = false;
+            }
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Render a chat message
+        function renderChatMessage(msg) {
+            const div = document.createElement('div');
+            div.className = `chat-message ${msg.role}`;
+
+            const avatar = msg.role === 'user' ? 'U' : 'AI';
+
+            let content = formatChatContent(msg.content);
+
+            let stepsHtml = '';
+            if (msg.steps && msg.steps.length > 0) {
+                const stepsId = 'steps-' + Date.now();
+                stepsHtml = `
+                    <div class="chat-steps-toggle" onclick="toggleChatSteps('${stepsId}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                        Show reasoning (${msg.steps.length} steps)
+                    </div>
+                    <div class="chat-steps" id="${stepsId}">
+                        ${msg.steps.map(step => `
+                            <div class="chat-step">
+                                ${step.thought ? `<div class="chat-step-thought"><strong>Thought:</strong> ${escapeHtml(step.thought)}</div>` : ''}
+                                ${step.action ? `<div class="chat-step-action"><strong>Action:</strong> ${escapeHtml(step.action)}: ${escapeHtml(step.action_input || '')}</div>` : ''}
+                                ${step.observation ? `<div class="chat-step-observation">${escapeHtml(step.observation)}</div>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            div.innerHTML = `
+                <div class="chat-avatar">${avatar}</div>
+                <div class="chat-bubble">
+                    ${content}
+                    ${stepsHtml}
+                </div>
+            `;
+
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Toggle steps visibility
+        window.toggleChatSteps = function(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.toggle('show');
+                const toggle = el.previousElementSibling;
+                if (toggle) {
+                    const isOpen = el.classList.contains('show');
+                    toggle.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="transform: rotate(${isOpen ? 90 : 0}deg)">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                        ${isOpen ? 'Hide' : 'Show'} reasoning (${el.querySelectorAll('.chat-step').length} steps)
+                    `;
+                }
+            }
+        };
+
+        // Format chat content (simple markdown-like formatting)
+        function formatChatContent(text) {
+            if (!text) return '';
+
+            // Escape HTML first
+            let formatted = escapeHtml(text);
+
+            // Code blocks
+            formatted = formatted.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+
+            // Inline code
+            formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Bold
+            formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+            // Line breaks
+            formatted = formatted.replace(/\n/g, '<br>');
+
+            return formatted;
+        }
+
+        // Show thinking indicator
+        function showChatThinking() {
+            const div = document.createElement('div');
+            div.className = 'chat-thinking';
+            div.innerHTML = `
+                <div class="chat-thinking-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <span>Thinking...</span>
+            `;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return div;
+        }
+
+        // Clear chat
+        function clearChat() {
+            chatState.messages = [];
+            chatMessages.innerHTML = '';
+            chatMessages.appendChild(chatEmpty);
+            chatEmpty.style.display = 'flex';
+        }
     </script>
 </body>
 </html>

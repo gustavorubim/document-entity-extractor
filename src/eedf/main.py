@@ -23,6 +23,9 @@ from .document_loader import extract_text_from_bytes
 from .extraction_agent import process_document
 from .schema_loader import clear_schema_cache, get_active_schema, validate_schema_detailed
 from .schemas import (
+    ChatRequest,
+    ChatResponse,
+    ChatStepResponse,
     SchemaSaveRequest,
     SchemaSaveResponse,
     SchemaValidationError,
@@ -262,6 +265,37 @@ async def execute_sql_query(request: SQLQueryRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"SQL error: {str(e)}")
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat_with_database(request: ChatRequest):
+    """Chat with the database using natural language."""
+    from .chat_agent import run_chat_agent
+
+    try:
+        # Convert history to the format expected by the agent
+        history = None
+        if request.history:
+            history = [{"role": msg.role, "content": msg.content} for msg in request.history]
+
+        result = await run_chat_agent(request.message, history)
+
+        return ChatResponse(
+            answer=result.answer,
+            steps=[
+                ChatStepResponse(
+                    thought=step.thought,
+                    action=step.action,
+                    action_input=step.action_input,
+                    observation=step.observation,
+                )
+                for step in result.steps
+            ],
+            error=result.error,
+        )
+    except Exception as e:
+        logger.error(f"Error in chat agent: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 
 def run():

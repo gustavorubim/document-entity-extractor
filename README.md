@@ -9,6 +9,8 @@ A Python application that leverages Google Gemini LLM to extract structured data
 - **Agentic Workflow**: LangGraph orchestrates the extraction pipeline
 - **Web Interface**: Clean single-page UI for document management
 - **SQL Explorer**: Query extracted data directly with SQL
+- **Database Chat**: Natural language interface to query your data using a ReAct agent
+- **Schema Designer**: Visual point-and-click interface to create and edit extraction schemas
 - **Async Processing**: Non-blocking document processing with real-time status updates
 
 ---
@@ -22,6 +24,9 @@ A Python application that leverages Google Gemini LLM to extract structured data
 - [Configuration](#configuration)
 - [Running the Application](#running-the-application)
 - [How It Works](#how-it-works)
+- [Database Chat](#database-chat)
+  - [How It Works](#how-database-chat-works)
+  - [Example Prompts](#example-prompts)
 - [API Reference](#api-reference)
 - [Database Schema](#database-schema)
 - [Schema & Migration Plan](#schema--migration-plan)
@@ -410,6 +415,108 @@ The default schema is defined in `config/extraction_schema.yaml` and extracts:
 
 ---
 
+## Database Chat
+
+The Database Chat feature provides a natural language interface to query and analyze your extracted data. It uses a **ReAct (Reasoning + Acting) agent** powered by Google Gemini to understand your questions, generate SQL queries, execute them, and provide insightful answers.
+
+### How Database Chat Works
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Chat UI
+    participant ReAct Agent
+    participant Gemini LLM
+    participant SQLite DB
+
+    User->>Chat UI: Ask question in natural language
+    Chat UI->>ReAct Agent: POST /api/chat
+
+    loop ReAct Loop (max 5 iterations)
+        ReAct Agent->>Gemini LLM: Question + Schema Context
+        Gemini LLM-->>ReAct Agent: Thought + Action + SQL Query
+
+        alt Action: execute_sql
+            ReAct Agent->>SQLite DB: Execute SQL
+            SQLite DB-->>ReAct Agent: Query Results
+            ReAct Agent->>ReAct Agent: Add observation to context
+        else Final Answer
+            ReAct Agent-->>Chat UI: Answer + Reasoning Steps
+        end
+    end
+
+    Chat UI-->>User: Display answer with expandable reasoning
+```
+
+### The ReAct Pattern
+
+The agent follows a **Thought → Action → Observation** loop:
+
+1. **Thought**: The agent reasons about what information it needs
+2. **Action**: It generates and executes a SQL query
+3. **Observation**: It receives the query results
+4. **Repeat** until it has enough information to answer
+5. **Final Answer**: It provides a clear, helpful response
+
+This approach allows the agent to handle complex questions that require multiple queries or iterative exploration of the data.
+
+### Example Prompts
+
+Here are some example questions you can ask the Database Chat:
+
+#### Basic Queries
+| Prompt | What it does |
+|--------|--------------|
+| "How many documents are in the database?" | Counts total documents |
+| "Show me all contract types" | Lists distinct contract types |
+| "What is the status of my documents?" | Shows document processing status breakdown |
+
+#### Exploring Parties
+| Prompt | What it does |
+|--------|--------------|
+| "List all parties and their roles" | Shows all parties from all contracts |
+| "Who are the service providers?" | Filters parties by role |
+| "Which companies appear in multiple contracts?" | Finds parties in more than one contract |
+
+#### Analyzing Obligations
+| Prompt | What it does |
+|--------|--------------|
+| "What obligations are pending?" | Filters obligations by status |
+| "Show me all obligations with due dates" | Lists obligations that have deadlines |
+| "What does each party need to do?" | Groups obligations by party |
+
+#### Contract Details
+| Prompt | What it does |
+|--------|--------------|
+| "Show me the most recent contract" | Orders by date, limits to 1 |
+| "Which contracts are expiring soon?" | Filters by termination date |
+| "What clauses are in the NDA?" | Joins contracts with clauses |
+
+#### Complex Analysis
+| Prompt | What it does |
+|--------|--------------|
+| "Summarize the obligations for Acme Corp" | Filters and summarizes for a specific party |
+| "Compare the number of clauses across contracts" | Aggregates and compares |
+| "What are the most common clause types?" | Groups and counts clause types |
+
+### Tips for Better Results
+
+1. **Be specific**: "Show me obligations for Acme Corp" works better than "Show me some obligations"
+2. **Use entity names**: Reference specific party names, contract types, or clause types from your data
+3. **Ask follow-up questions**: The agent maintains conversation context
+4. **Expand the reasoning**: Click "Show reasoning" to see the SQL queries and understand how the agent arrived at its answer
+
+### Viewing Agent Reasoning
+
+Each response includes an expandable "Show reasoning" section that displays:
+- **Thought**: What the agent was thinking
+- **Action**: The SQL query it executed
+- **Observation**: The raw query results
+
+This transparency helps you understand and verify the agent's analysis.
+
+---
+
 ## API Reference
 
 ### Endpoints Overview
@@ -423,6 +530,7 @@ flowchart LR
         E4["GET /api/documents/{id}"]
         E5["POST /api/sql"]
         E6["GET /api/schema"]
+        E7["POST /api/chat"]
     end
 
     subgraph Responses["Responses"]
@@ -432,6 +540,7 @@ flowchart LR
         R4[DocumentWithExtraction]
         R5[SQLQueryResponse]
         R6[ExtractionSchema]
+        R7[ChatResponse]
     end
 
     E1 --> R1
@@ -440,6 +549,7 @@ flowchart LR
     E4 --> R4
     E5 --> R5
     E6 --> R6
+    E7 --> R7
 ```
 
 ### Endpoint Details
@@ -451,7 +561,11 @@ flowchart LR
 | `/api/documents` | GET | List all documents | - | `{documents: DocumentRecord[]}` |
 | `/api/documents/{id}` | GET | Get document details | Path: `id` | `DocumentWithExtraction` |
 | `/api/schema` | GET | Get active extraction schema | - | JSON schema |
+| `/api/schema` | POST | Save extraction schema | `{schema_data: ExtractionSchema}` | `{success, message, validation}` |
+| `/api/schema/validate` | POST | Validate schema without saving | `{schema_data: ExtractionSchema}` | `{valid, errors, warnings}` |
+| `/api/schema/export/{format}` | GET | Export schema as YAML or JSON | Path: `format` (yaml/json) | File download |
 | `/api/sql` | POST | Execute SQL query | `{query: string}` | `{columns, rows, row_count}` |
+| `/api/chat` | POST | Chat with database | `{message: string, history?: ChatMessage[]}` | `{answer, steps, error?}` |
 
 ### Upload Response
 
@@ -1348,6 +1462,8 @@ flowchart TB
     subgraph Navigation["Navigation Items"]
         NAV1[Process Documents]
         NAV2[SQL Explorer]
+        NAV3[Schema Designer]
+        NAV4[Database Chat]
     end
 
     subgraph ProcessDocs["Process Documents Page"]
@@ -1362,10 +1478,26 @@ flowchart TB
         RESULTS[Results Table<br/>Dynamic Columns]
     end
 
+    subgraph SchemaDesigner["Schema Designer Page"]
+        META[Schema Metadata]
+        FIELDS[Fields Editor]
+        PREVIEW[Table Preview]
+    end
+
+    subgraph DatabaseChat["Database Chat Page"]
+        CHATMSG[Chat Messages]
+        CHATINPUT[Natural Language Input]
+        REASONING[Expandable Reasoning]
+    end
+
     SIDEBAR --> NAV1
     SIDEBAR --> NAV2
+    SIDEBAR --> NAV3
+    SIDEBAR --> NAV4
     NAV1 --> ProcessDocs
     NAV2 --> SQLExplorer
+    NAV3 --> SchemaDesigner
+    NAV4 --> DatabaseChat
 ```
 
 ### UI Features
@@ -1375,6 +1507,8 @@ flowchart TB
 - **Real-time Status**: Auto-polling for processing updates
 - **Modal View**: Detailed extraction results
 - **SQL Explorer**: Direct database queries with preset shortcuts
+- **Schema Designer**: Visual interface to create and edit extraction schemas
+- **Database Chat**: Natural language interface with ReAct agent for data exploration
 
 ---
 
