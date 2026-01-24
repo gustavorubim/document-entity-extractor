@@ -214,6 +214,191 @@ def merge_extractions(schema: dict[str, Any], extractions: list[dict[str, Any]])
     return merged
 
 
+def clear_schema_cache() -> None:
+    """Clear the cached schema so it gets reloaded on next access."""
+    get_active_schema.cache_clear()
+
+
+def validate_schema_detailed(schema: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Validate schema and return detailed errors and warnings.
+
+    Returns:
+        Tuple of (errors, warnings) where each is a list of dicts with 'path' and 'message' keys.
+    """
+    errors: list[dict[str, Any]] = []
+    warnings: list[dict[str, Any]] = []
+
+    if not isinstance(schema, dict):
+        errors.append({"path": "", "message": "Schema must be a JSON object"})
+        return errors, warnings
+
+    # Check required top-level keys
+    for key in ("name", "version", "root", "fields"):
+        if key not in schema:
+            errors.append({"path": key, "message": f"Missing required key: {key}"})
+
+    # Check name
+    if "name" in schema:
+        name = schema["name"]
+        if not isinstance(name, str) or not name.strip():
+            errors.append({"path": "name", "message": "Name must be a non-empty string"})
+        elif not name.replace("_", "").replace("-", "").isalnum():
+            warnings.append({"path": "name", "message": "Name should only contain alphanumeric characters, underscores, and hyphens"})
+
+    # Check version
+    if "version" in schema:
+        version = schema["version"]
+        if not isinstance(version, int) or version < 1:
+            errors.append({"path": "version", "message": "Version must be a positive integer"})
+
+    # Check description
+    if "description" not in schema or not schema.get("description"):
+        warnings.append({"path": "description", "message": "Consider adding a description"})
+
+    # Check prompt
+    if "prompt" in schema:
+        prompt = schema["prompt"]
+        if not isinstance(prompt, dict):
+            errors.append({"path": "prompt", "message": "Prompt must be an object"})
+        else:
+            if "system" not in prompt or not prompt.get("system"):
+                warnings.append({"path": "prompt.system", "message": "Consider adding a system prompt"})
+            if "instructions" not in prompt or not prompt.get("instructions"):
+                warnings.append({"path": "prompt.instructions", "message": "Consider adding instructions"})
+
+    # Check root configuration
+    if "root" in schema:
+        root = schema["root"]
+        if not isinstance(root, dict):
+            errors.append({"path": "root", "message": "Root must be an object"})
+        else:
+            if "table" not in root:
+                errors.append({"path": "root.table", "message": "Root must define a table name"})
+            elif not root["table"] or not isinstance(root["table"], str):
+                errors.append({"path": "root.table", "message": "Table name must be a non-empty string"})
+
+            if "document_fk" not in root:
+                errors.append({"path": "root.document_fk", "message": "Root must define document_fk"})
+            else:
+                doc_fk = root["document_fk"]
+                if not isinstance(doc_fk, dict):
+                    errors.append({"path": "root.document_fk", "message": "document_fk must be an object"})
+                else:
+                    if "column" not in doc_fk:
+                        errors.append({"path": "root.document_fk.column", "message": "document_fk must define column"})
+                    if "references" not in doc_fk:
+                        errors.append({"path": "root.document_fk.references", "message": "document_fk must define references"})
+
+    # Check fields
+    if "fields" in schema:
+        fields = schema["fields"]
+        if not isinstance(fields, list):
+            errors.append({"path": "fields", "message": "Fields must be a list"})
+        elif len(fields) == 0:
+            warnings.append({"path": "fields", "message": "Schema has no fields defined"})
+        else:
+            field_names = set()
+            for i, field in enumerate(fields):
+                field_path = f"fields[{i}]"
+                field_errors, field_warnings = _validate_field_detailed(field, field_path)
+                errors.extend(field_errors)
+                warnings.extend(field_warnings)
+
+                # Check for duplicate field names
+                if "name" in field:
+                    if field["name"] in field_names:
+                        errors.append({"path": f"{field_path}.name", "message": f"Duplicate field name: {field['name']}"})
+                    field_names.add(field["name"])
+
+    return errors, warnings
+
+
+def _validate_field_detailed(field: dict[str, Any], path: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Validate a single field and return errors/warnings."""
+    errors: list[dict[str, Any]] = []
+    warnings: list[dict[str, Any]] = []
+
+    if not isinstance(field, dict):
+        errors.append({"path": path, "message": "Field must be an object"})
+        return errors, warnings
+
+    # Check required field properties
+    if "name" not in field:
+        errors.append({"path": f"{path}.name", "message": "Field must have a name"})
+    elif not field["name"] or not isinstance(field["name"], str):
+        errors.append({"path": f"{path}.name", "message": "Field name must be a non-empty string"})
+
+    if "type" not in field:
+        errors.append({"path": f"{path}.type", "message": "Field must have a type"})
+    else:
+        field_type = field["type"]
+        if field_type not in SUPPORTED_FIELD_TYPES:
+            errors.append({"path": f"{path}.type", "message": f"Unsupported field type: {field_type}"})
+
+    # Check description
+    if "description" not in field or not field.get("description"):
+        warnings.append({"path": f"{path}.description", "message": "Consider adding a field description"})
+
+    # Check SQL mapping
+    if "sql" not in field:
+        errors.append({"path": f"{path}.sql", "message": "Field must have sql mapping"})
+    else:
+        sql = field["sql"]
+        if not isinstance(sql, dict):
+            errors.append({"path": f"{path}.sql", "message": "SQL mapping must be an object"})
+        else:
+            if "table" not in sql:
+                errors.append({"path": f"{path}.sql.table", "message": "SQL mapping must define table"})
+
+            field_type = field.get("type", "")
+            if field_type == "array":
+                if "columns" not in sql:
+                    errors.append({"path": f"{path}.sql.columns", "message": "Array field must define sql.columns"})
+                if "fk" not in sql:
+                    errors.append({"path": f"{path}.sql.fk", "message": "Array field must define sql.fk"})
+                elif not isinstance(sql["fk"], dict) or "column" not in sql["fk"]:
+                    errors.append({"path": f"{path}.sql.fk.column", "message": "sql.fk must define column"})
+            else:
+                if "column" not in sql:
+                    errors.append({"path": f"{path}.sql.column", "message": "Non-array field must define sql.column"})
+
+    # Check array items
+    field_type = field.get("type", "")
+    if field_type == "array":
+        if "items" not in field:
+            errors.append({"path": f"{path}.items", "message": "Array field must define items"})
+        else:
+            items = field["items"]
+            if not isinstance(items, dict):
+                errors.append({"path": f"{path}.items", "message": "Items must be an object"})
+            elif items.get("type") == "object":
+                if "fields" not in items or not items.get("fields"):
+                    warnings.append({"path": f"{path}.items.fields", "message": "Object items should define fields"})
+                else:
+                    for j, sub_field in enumerate(items.get("fields", [])):
+                        sub_path = f"{path}.items.fields[{j}]"
+                        # Basic validation for sub-fields
+                        if "name" not in sub_field:
+                            errors.append({"path": f"{sub_path}.name", "message": "Sub-field must have a name"})
+                        if "type" not in sub_field:
+                            errors.append({"path": f"{sub_path}.type", "message": "Sub-field must have a type"})
+
+    # Check merge strategy
+    if "merge" in field:
+        merge = field["merge"]
+        if not isinstance(merge, dict):
+            errors.append({"path": f"{path}.merge", "message": "Merge must be an object"})
+        else:
+            strategy = merge.get("strategy", "")
+            valid_strategies = {"first_non_empty", "union_unique", "union_by_key", "concat"}
+            if strategy and strategy not in valid_strategies:
+                errors.append({"path": f"{path}.merge.strategy", "message": f"Invalid merge strategy: {strategy}"})
+            if strategy == "union_by_key" and not merge.get("key_fields"):
+                errors.append({"path": f"{path}.merge.key_fields", "message": "union_by_key strategy requires key_fields"})
+
+    return errors, warnings
+
+
 def _merge_field(field: dict[str, Any], values: list[Any], strategy: str) -> Any:
     field_type = field["type"]
     if strategy == "first_non_empty":

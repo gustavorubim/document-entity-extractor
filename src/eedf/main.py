@@ -1,14 +1,16 @@
 """FastAPI app entry point."""
 
 import asyncio
+import json
 import logging
 from pathlib import Path
 
+import yaml
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from .config import GOOGLE_API_KEY
+from .config import EXTRACTION_SCHEMA_PATH, GOOGLE_API_KEY
 from .database import (
     execute_sql,
     get_all_documents,
@@ -19,8 +21,16 @@ from .database import (
 )
 from .document_loader import extract_text_from_bytes
 from .extraction_agent import process_document
-from .schema_loader import get_active_schema
-from .schemas import SQLQueryRequest, SQLQueryResponse, UploadResponse
+from .schema_loader import clear_schema_cache, get_active_schema, validate_schema_detailed
+from .schemas import (
+    SchemaSaveRequest,
+    SchemaSaveResponse,
+    SchemaValidationError,
+    SchemaValidationResponse,
+    SQLQueryRequest,
+    SQLQueryResponse,
+    UploadResponse,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -140,6 +150,102 @@ async def get_document(document_id: int):
 async def get_schema():
     """Get the active extraction schema."""
     return get_active_schema()
+
+
+@app.post("/api/schema", response_model=SchemaSaveResponse)
+async def save_schema(request: SchemaSaveRequest):
+    """Save a new extraction schema."""
+    try:
+        # Convert Pydantic model to dict, excluding None values
+        schema_dict = request.schema_data.model_dump(exclude_none=True)
+
+        # Validate the schema
+        errors, warnings = validate_schema_detailed(schema_dict)
+
+        validation_response = SchemaValidationResponse(
+            valid=len(errors) == 0,
+            errors=[SchemaValidationError(path=e["path"], message=e["message"], severity="error") for e in errors],
+            warnings=[SchemaValidationError(path=w["path"], message=w["message"], severity="warning") for w in warnings],
+        )
+
+        if not validation_response.valid:
+            return SchemaSaveResponse(
+                success=False,
+                message="Schema validation failed",
+                validation=validation_response,
+            )
+
+        # Write the schema to file
+        EXTRACTION_SCHEMA_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(EXTRACTION_SCHEMA_PATH, "w", encoding="utf-8") as f:
+            yaml.dump(schema_dict, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+        # Clear the schema cache so changes take effect
+        clear_schema_cache()
+
+        # Reinitialize database to apply schema changes
+        init_db()
+
+        return SchemaSaveResponse(
+            success=True,
+            message="Schema saved successfully",
+            validation=validation_response,
+        )
+
+    except Exception as e:
+        logger.error(f"Error saving schema: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to save schema: {str(e)}")
+
+
+@app.post("/api/schema/validate", response_model=SchemaValidationResponse)
+async def validate_schema(request: SchemaSaveRequest):
+    """Validate a schema without saving."""
+    try:
+        # Convert Pydantic model to dict
+        schema_dict = request.schema_data.model_dump(exclude_none=True)
+
+        # Validate the schema
+        errors, warnings = validate_schema_detailed(schema_dict)
+
+        return SchemaValidationResponse(
+            valid=len(errors) == 0,
+            errors=[SchemaValidationError(path=e["path"], message=e["message"], severity="error") for e in errors],
+            warnings=[SchemaValidationError(path=w["path"], message=w["message"], severity="warning") for w in warnings],
+        )
+
+    except Exception as e:
+        logger.error(f"Error validating schema: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to validate schema: {str(e)}")
+
+
+@app.get("/api/schema/export/{format}")
+async def export_schema(format: str):
+    """Export the current schema as YAML or JSON."""
+    try:
+        schema = get_active_schema()
+
+        if format.lower() == "yaml":
+            content = yaml.dump(schema, default_flow_style=False, allow_unicode=True, sort_keys=False)
+            return Response(
+                content=content,
+                media_type="application/x-yaml",
+                headers={"Content-Disposition": f"attachment; filename=extraction_schema.yaml"},
+            )
+        elif format.lower() == "json":
+            content = json.dumps(schema, indent=2)
+            return Response(
+                content=content,
+                media_type="application/json",
+                headers={"Content-Disposition": f"attachment; filename=extraction_schema.json"},
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Format must be 'yaml' or 'json'")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting schema: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to export schema: {str(e)}")
 
 
 @app.post("/api/sql", response_model=SQLQueryResponse)

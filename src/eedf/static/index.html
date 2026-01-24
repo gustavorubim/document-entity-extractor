@@ -537,6 +537,577 @@
             color: #7f8c8d;
         }
 
+        /* Schema Designer Styles */
+        .schema-designer {
+            display: flex;
+            gap: 24px;
+            height: calc(100vh - 180px);
+        }
+
+        .schema-left-panel {
+            flex: 0 0 45%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .schema-right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .schema-card {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 16px;
+        }
+
+        .schema-card h4 {
+            font-size: 0.9rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .schema-card h4 svg {
+            width: 16px;
+            height: 16px;
+            color: #7f8c8d;
+        }
+
+        .schema-form-group {
+            margin-bottom: 12px;
+        }
+
+        .schema-form-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-bottom: 4px;
+        }
+
+        .schema-form-group input,
+        .schema-form-group select,
+        .schema-form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .schema-form-group input:focus,
+        .schema-form-group select:focus,
+        .schema-form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .schema-form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+        }
+
+        .schema-form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .schema-form-row .schema-form-group {
+            flex: 1;
+        }
+
+        /* Fields List */
+        .fields-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .field-card {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .field-card:hover {
+            border-color: #3498db;
+            background: #f0f7ff;
+        }
+
+        .field-card.selected {
+            border-color: #3498db;
+            background: #e8f4fd;
+        }
+
+        .field-card.dragging {
+            opacity: 0.5;
+            border-style: dashed;
+        }
+
+        .field-drag-handle {
+            color: #bdc3c7;
+            cursor: grab;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .field-drag-handle span {
+            display: block;
+            width: 12px;
+            height: 2px;
+            background: currentColor;
+            border-radius: 1px;
+        }
+
+        .field-info {
+            flex: 1;
+        }
+
+        .field-name {
+            font-weight: 500;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .field-meta {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-top: 2px;
+        }
+
+        .field-type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            background: #e8f4fd;
+            color: #2980b9;
+        }
+
+        .field-type-badge.array {
+            background: #e8f8f0;
+            color: #27ae60;
+        }
+
+        .field-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .field-action-btn {
+            padding: 4px 8px;
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: #555;
+            transition: all 0.2s;
+        }
+
+        .field-action-btn:hover {
+            background: #fff;
+            border-color: #3498db;
+            color: #3498db;
+        }
+
+        .field-action-btn.delete:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .add-field-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            background: none;
+            cursor: pointer;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .add-field-btn:hover {
+            border-color: #3498db;
+            color: #3498db;
+            background: #f8fbfe;
+        }
+
+        /* Tree Preview */
+        .tree-preview {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            flex: 1;
+            min-height: 200px;
+        }
+
+        .tree-node {
+            padding: 4px 0;
+        }
+
+        .tree-node-name {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .tree-node-type {
+            color: #7f8c8d;
+            font-weight: normal;
+        }
+
+        .tree-children {
+            margin-left: 20px;
+            border-left: 1px dashed #ddd;
+            padding-left: 12px;
+        }
+
+        .tree-table {
+            color: #8e44ad;
+        }
+
+        .tree-column {
+            color: #2980b9;
+        }
+
+        /* Actions Bar */
+        .schema-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .schema-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .schema-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .schema-btn.primary {
+            background: #27ae60;
+            color: white;
+        }
+
+        .schema-btn.primary:hover {
+            background: #219a52;
+        }
+
+        .schema-btn.secondary {
+            background: #3498db;
+            color: white;
+        }
+
+        .schema-btn.secondary:hover {
+            background: #2980b9;
+        }
+
+        .schema-btn.outline {
+            background: white;
+            color: #555;
+            border: 1px solid #ddd;
+        }
+
+        .schema-btn.outline:hover {
+            border-color: #3498db;
+            color: #3498db;
+        }
+
+        .schema-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Field Edit Modal */
+        .field-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .field-modal.active {
+            display: flex;
+        }
+
+        .field-modal-content {
+            background: #ffffff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .field-modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .field-modal-header h3 {
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+
+        .field-modal-tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .field-modal-tab {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+
+        .field-modal-tab:hover {
+            color: #2c3e50;
+        }
+
+        .field-modal-tab.active {
+            color: #2980b9;
+            border-bottom-color: #2980b9;
+            background: #fff;
+        }
+
+        .field-modal-body {
+            padding: 20px;
+        }
+
+        .field-tab-content {
+            display: none;
+        }
+
+        .field-tab-content.active {
+            display: block;
+        }
+
+        .field-modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* Nested fields editor */
+        .nested-fields-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .nested-fields-section h5 {
+            font-size: 0.85rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+
+        .nested-field-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: flex-start;
+        }
+
+        .nested-field-row input,
+        .nested-field-row select {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .nested-field-remove {
+            padding: 6px 10px;
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #e74c3c;
+        }
+
+        .nested-field-remove:hover {
+            background: #fdeaea;
+        }
+
+        .add-nested-field-btn {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: none;
+            border: 1px dashed #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #7f8c8d;
+            font-size: 0.8rem;
+            width: 100%;
+        }
+
+        .add-nested-field-btn:hover {
+            border-color: #3498db;
+            color: #3498db;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .toast.error {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .toast.warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 8px;
+            opacity: 0.7;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        /* Validation Results */
+        .validation-results {
+            margin-top: 16px;
+        }
+
+        .validation-item {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            display: flex;
+            gap: 8px;
+        }
+
+        .validation-item.error {
+            background: #fdeaea;
+            color: #c0392b;
+        }
+
+        .validation-item.warning {
+            background: #fef5e7;
+            color: #d68910;
+        }
+
+        .validation-path {
+            font-family: monospace;
+            font-weight: 500;
+        }
+
+        /* Dirty state indicator */
+        .dirty-indicator {
+            display: none;
+            width: 8px;
+            height: 8px;
+            background: #f39c12;
+            border-radius: 50%;
+            margin-left: 4px;
+        }
+
+        .dirty-indicator.active {
+            display: inline-block;
+        }
+
         /* Mobile Responsiveness */
         @media screen and (max-width: 768px) {
             body {
@@ -691,6 +1262,80 @@
                 font-size: 0.75rem;
             }
         }
+
+        /* Schema Designer Mobile */
+        @media screen and (max-width: 900px) {
+            .schema-designer {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .schema-left-panel {
+                flex: none;
+                padding-right: 0;
+            }
+
+            .schema-right-panel {
+                flex: none;
+            }
+
+            .fields-list {
+                max-height: 300px;
+            }
+
+            .tree-preview {
+                min-height: 150px;
+            }
+
+            .schema-actions {
+                flex-direction: column;
+            }
+
+            .schema-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media screen and (max-width: 600px) {
+            .field-modal-content {
+                width: 95%;
+                margin: 8px;
+            }
+
+            .field-modal-tabs {
+                overflow-x: auto;
+            }
+
+            .field-modal-tab {
+                padding: 10px 14px;
+                font-size: 0.8rem;
+                white-space: nowrap;
+            }
+
+            .schema-form-row {
+                flex-direction: column;
+            }
+
+            .nested-field-row {
+                flex-wrap: wrap;
+            }
+
+            .nested-field-row input,
+            .nested-field-row select {
+                min-width: 100px;
+            }
+
+            .field-card {
+                flex-wrap: wrap;
+            }
+
+            .field-actions {
+                width: 100%;
+                justify-content: flex-end;
+                margin-top: 8px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -712,6 +1357,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                 </svg>
                 SQL Explorer
+            </div>
+            <div class="nav-item" data-section="schema">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Schema Designer</span>
+                <span class="dirty-indicator" id="schema-dirty-indicator"></span>
             </div>
         </div>
     </nav>
@@ -784,7 +1437,292 @@
                 </div>
             </div>
         </section>
+
+        <!-- Schema Designer Section -->
+        <section id="schema-section" class="section">
+            <header class="content-header">
+                <h2>Schema Designer</h2>
+            </header>
+            <div class="content-body">
+                <div class="schema-designer">
+                    <!-- Left Panel -->
+                    <div class="schema-left-panel">
+                        <!-- Schema Metadata -->
+                        <div class="schema-card" id="schema-metadata-card">
+                            <h4>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Schema Metadata
+                            </h4>
+                            <div class="schema-form-row">
+                                <div class="schema-form-group">
+                                    <label>Name</label>
+                                    <input type="text" id="schema-name" placeholder="e.g., contract_legal">
+                                </div>
+                                <div class="schema-form-group">
+                                    <label>Version</label>
+                                    <input type="number" id="schema-version" value="1" min="1">
+                                </div>
+                            </div>
+                            <div class="schema-form-group">
+                                <label>Description</label>
+                                <input type="text" id="schema-description" placeholder="Brief description of this schema">
+                            </div>
+                            <div class="schema-form-group">
+                                <label>System Prompt</label>
+                                <textarea id="schema-system-prompt" placeholder="System prompt for the LLM"></textarea>
+                            </div>
+                            <div class="schema-form-group">
+                                <label>Instructions</label>
+                                <textarea id="schema-instructions" placeholder="Additional instructions for extraction"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Root Table Config -->
+                        <div class="schema-card" id="root-config-card">
+                            <h4>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                Root Table Configuration
+                            </h4>
+                            <div class="schema-form-row">
+                                <div class="schema-form-group">
+                                    <label>Table Name</label>
+                                    <input type="text" id="root-table-name" placeholder="e.g., contracts">
+                                </div>
+                                <div class="schema-form-group">
+                                    <label>Primary Key</label>
+                                    <input type="text" id="root-primary-key" value="id">
+                                </div>
+                            </div>
+                            <div class="schema-form-row">
+                                <div class="schema-form-group">
+                                    <label>Document FK Column</label>
+                                    <input type="text" id="root-doc-fk-column" value="document_id">
+                                </div>
+                                <div class="schema-form-group">
+                                    <label>References</label>
+                                    <input type="text" id="root-doc-fk-references" value="documents(id)">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fields List -->
+                        <div class="schema-card" id="fields-card">
+                            <h4>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                </svg>
+                                Extraction Fields
+                            </h4>
+                            <div class="fields-list" id="fields-list">
+                                <!-- Fields will be rendered here -->
+                            </div>
+                            <button class="add-field-btn" id="add-field-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Field
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel -->
+                    <div class="schema-right-panel">
+                        <!-- Visual Preview -->
+                        <div class="schema-card" style="flex: 1; display: flex; flex-direction: column;">
+                            <h4>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                Table Structure Preview
+                            </h4>
+                            <div class="tree-preview" id="tree-preview">
+                                <!-- Tree will be rendered here -->
+                            </div>
+                        </div>
+
+                        <!-- Validation Results -->
+                        <div class="schema-card" id="validation-card" style="display: none;">
+                            <h4>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Validation Results
+                            </h4>
+                            <div class="validation-results" id="validation-results">
+                                <!-- Validation results will be rendered here -->
+                            </div>
+                        </div>
+
+                        <!-- Actions Bar -->
+                        <div class="schema-card">
+                            <div class="schema-actions">
+                                <button class="schema-btn secondary" id="validate-schema-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Validate
+                                </button>
+                                <button class="schema-btn primary" id="save-schema-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                    </svg>
+                                    Save Schema
+                                </button>
+                                <button class="schema-btn outline" id="export-yaml-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Export YAML
+                                </button>
+                                <button class="schema-btn outline" id="export-json-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    Export JSON
+                                </button>
+                                <button class="schema-btn outline" id="reload-schema-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    Reload
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
+
+    <!-- Field Edit Modal -->
+    <div class="field-modal" id="field-modal">
+        <div class="field-modal-content">
+            <div class="field-modal-header">
+                <h3 id="field-modal-title">Edit Field</h3>
+                <button class="close-btn" id="close-field-modal">&times;</button>
+            </div>
+            <div class="field-modal-tabs">
+                <button class="field-modal-tab active" data-tab="basic">Basic Info</button>
+                <button class="field-modal-tab" data-tab="sql">SQL Mapping</button>
+                <button class="field-modal-tab" data-tab="merge">Merge Strategy</button>
+                <button class="field-modal-tab" data-tab="items" id="items-tab" style="display: none;">Array Items</button>
+            </div>
+            <div class="field-modal-body">
+                <!-- Basic Info Tab -->
+                <div class="field-tab-content active" id="tab-basic">
+                    <div class="schema-form-group">
+                        <label>Field Name</label>
+                        <input type="text" id="field-name" placeholder="e.g., contract_type">
+                    </div>
+                    <div class="schema-form-group">
+                        <label>Type</label>
+                        <select id="field-type">
+                            <option value="string">String</option>
+                            <option value="date">Date</option>
+                            <option value="integer">Integer</option>
+                            <option value="number">Number</option>
+                            <option value="boolean">Boolean</option>
+                            <option value="array">Array</option>
+                        </select>
+                    </div>
+                    <div class="schema-form-group">
+                        <label>Description</label>
+                        <textarea id="field-description" placeholder="Description for LLM extraction"></textarea>
+                    </div>
+                </div>
+
+                <!-- SQL Mapping Tab -->
+                <div class="field-tab-content" id="tab-sql">
+                    <div class="schema-form-group">
+                        <label>Table</label>
+                        <input type="text" id="field-sql-table" placeholder="e.g., contracts or child table name">
+                    </div>
+                    <div class="schema-form-group" id="field-sql-column-group">
+                        <label>Column</label>
+                        <input type="text" id="field-sql-column" placeholder="e.g., contract_type">
+                    </div>
+                    <div class="schema-form-group" id="field-sql-type-group">
+                        <label>Column Type</label>
+                        <select id="field-sql-type">
+                            <option value="TEXT">TEXT</option>
+                            <option value="INTEGER">INTEGER</option>
+                            <option value="REAL">REAL</option>
+                            <option value="TIMESTAMP">TIMESTAMP</option>
+                        </select>
+                    </div>
+                    <!-- Array-specific SQL fields -->
+                    <div id="array-sql-fields" style="display: none;">
+                        <div class="schema-form-group">
+                            <label>Foreign Key Column</label>
+                            <input type="text" id="field-sql-fk-column" placeholder="e.g., contract_id">
+                        </div>
+                        <div class="schema-form-group">
+                            <label>FK References</label>
+                            <input type="text" id="field-sql-fk-references" placeholder="e.g., contracts(id)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Merge Strategy Tab -->
+                <div class="field-tab-content" id="tab-merge">
+                    <div class="schema-form-group">
+                        <label>Merge Strategy</label>
+                        <select id="field-merge-strategy">
+                            <option value="first_non_empty">First Non-Empty</option>
+                            <option value="union_unique">Union Unique</option>
+                            <option value="union_by_key">Union by Key</option>
+                            <option value="concat">Concatenate</option>
+                        </select>
+                    </div>
+                    <div class="schema-form-group" id="merge-key-fields-group" style="display: none;">
+                        <label>Key Fields (comma-separated)</label>
+                        <input type="text" id="field-merge-key-fields" placeholder="e.g., name, role">
+                    </div>
+                </div>
+
+                <!-- Array Items Tab -->
+                <div class="field-tab-content" id="tab-items">
+                    <div class="schema-form-group">
+                        <label>Item Type</label>
+                        <select id="field-items-type">
+                            <option value="string">String</option>
+                            <option value="object">Object</option>
+                        </select>
+                    </div>
+                    <div class="schema-form-group" id="items-description-group">
+                        <label>Item Description</label>
+                        <input type="text" id="field-items-description" placeholder="Description for array items">
+                    </div>
+                    <div class="nested-fields-section" id="nested-fields-section" style="display: none;">
+                        <h5>Object Fields</h5>
+                        <div id="nested-fields-list">
+                            <!-- Nested fields will be rendered here -->
+                        </div>
+                        <button class="add-nested-field-btn" id="add-nested-field-btn">+ Add Field</button>
+                    </div>
+                    <!-- SQL Columns for Array -->
+                    <div class="nested-fields-section" id="sql-columns-section" style="display: none;">
+                        <h5>SQL Columns</h5>
+                        <div id="sql-columns-list">
+                            <!-- SQL columns will be rendered here -->
+                        </div>
+                        <button class="add-nested-field-btn" id="add-sql-column-btn">+ Add Column</button>
+                    </div>
+                </div>
+            </div>
+            <div class="field-modal-footer">
+                <button class="schema-btn outline" id="cancel-field-btn">Cancel</button>
+                <button class="schema-btn primary" id="save-field-btn">Save Field</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
 
     <!-- Document Detail Modal -->
     <div class="modal-overlay" id="document-modal">
@@ -1225,6 +2163,831 @@
 
         // Initial load
         loadSchema().then(loadDocuments);
+
+        // ===== SCHEMA DESIGNER =====
+
+        // Schema Designer State
+        const schemaDesignerState = {
+            schema: {
+                name: '',
+                version: 1,
+                description: '',
+                prompt: { system: '', instructions: '' },
+                root: {
+                    table: '',
+                    primary_key: 'id',
+                    document_fk: { column: 'document_id', references: 'documents(id)' }
+                },
+                fields: []
+            },
+            ui: {
+                selectedFieldIndex: null,
+                editingFieldIndex: null,
+                isDirty: false,
+                validationErrors: [],
+                validationWarnings: [],
+                dragState: { dragging: false, dragIndex: null }
+            },
+            options: {
+                fieldTypes: ['string', 'date', 'integer', 'number', 'boolean', 'array'],
+                mergeStrategies: ['first_non_empty', 'union_unique', 'union_by_key', 'concat'],
+                sqlColumnTypes: ['TEXT', 'INTEGER', 'REAL', 'TIMESTAMP']
+            }
+        };
+
+        // DOM Elements for Schema Designer
+        const schemaNameInput = document.getElementById('schema-name');
+        const schemaVersionInput = document.getElementById('schema-version');
+        const schemaDescriptionInput = document.getElementById('schema-description');
+        const schemaSystemPromptInput = document.getElementById('schema-system-prompt');
+        const schemaInstructionsInput = document.getElementById('schema-instructions');
+        const rootTableNameInput = document.getElementById('root-table-name');
+        const rootPrimaryKeyInput = document.getElementById('root-primary-key');
+        const rootDocFkColumnInput = document.getElementById('root-doc-fk-column');
+        const rootDocFkReferencesInput = document.getElementById('root-doc-fk-references');
+        const fieldsListEl = document.getElementById('fields-list');
+        const addFieldBtn = document.getElementById('add-field-btn');
+        const treePreviewEl = document.getElementById('tree-preview');
+        const validationCard = document.getElementById('validation-card');
+        const validationResultsEl = document.getElementById('validation-results');
+        const dirtyIndicator = document.getElementById('schema-dirty-indicator');
+
+        // Action buttons
+        const validateSchemaBtn = document.getElementById('validate-schema-btn');
+        const saveSchemaBtn = document.getElementById('save-schema-btn');
+        const exportYamlBtn = document.getElementById('export-yaml-btn');
+        const exportJsonBtn = document.getElementById('export-json-btn');
+        const reloadSchemaBtn = document.getElementById('reload-schema-btn');
+
+        // Field modal elements
+        const fieldModal = document.getElementById('field-modal');
+        const fieldModalTitle = document.getElementById('field-modal-title');
+        const closeFieldModalBtn = document.getElementById('close-field-modal');
+        const cancelFieldBtn = document.getElementById('cancel-field-btn');
+        const saveFieldBtn = document.getElementById('save-field-btn');
+        const fieldModalTabs = document.querySelectorAll('.field-modal-tab');
+
+        // Field form elements
+        const fieldNameInput = document.getElementById('field-name');
+        const fieldTypeSelect = document.getElementById('field-type');
+        const fieldDescriptionInput = document.getElementById('field-description');
+        const fieldSqlTableInput = document.getElementById('field-sql-table');
+        const fieldSqlColumnInput = document.getElementById('field-sql-column');
+        const fieldSqlTypeSelect = document.getElementById('field-sql-type');
+        const fieldSqlFkColumnInput = document.getElementById('field-sql-fk-column');
+        const fieldSqlFkReferencesInput = document.getElementById('field-sql-fk-references');
+        const fieldMergeStrategySelect = document.getElementById('field-merge-strategy');
+        const fieldMergeKeyFieldsInput = document.getElementById('field-merge-key-fields');
+        const fieldItemsTypeSelect = document.getElementById('field-items-type');
+        const fieldItemsDescriptionInput = document.getElementById('field-items-description');
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span>${escapeHtml(message)}</span>
+                <button class="toast-close">&times;</button>
+            `;
+            container.appendChild(toast);
+
+            toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        // Mark schema as dirty
+        function markDirty() {
+            schemaDesignerState.ui.isDirty = true;
+            dirtyIndicator.classList.add('active');
+        }
+
+        function markClean() {
+            schemaDesignerState.ui.isDirty = false;
+            dirtyIndicator.classList.remove('active');
+        }
+
+        // Load schema from API
+        async function loadSchemaForDesigner() {
+            try {
+                const response = await fetch('/api/schema');
+                const data = await response.json();
+
+                // Populate state
+                schemaDesignerState.schema = {
+                    name: data.name || '',
+                    version: data.version || 1,
+                    description: data.description || '',
+                    prompt: data.prompt || { system: '', instructions: '' },
+                    root: data.root || {
+                        table: '',
+                        primary_key: 'id',
+                        document_fk: { column: 'document_id', references: 'documents(id)' }
+                    },
+                    fields: data.fields || []
+                };
+
+                // Populate form
+                schemaNameInput.value = schemaDesignerState.schema.name;
+                schemaVersionInput.value = schemaDesignerState.schema.version;
+                schemaDescriptionInput.value = schemaDesignerState.schema.description;
+                schemaSystemPromptInput.value = schemaDesignerState.schema.prompt.system || '';
+                schemaInstructionsInput.value = schemaDesignerState.schema.prompt.instructions || '';
+                rootTableNameInput.value = schemaDesignerState.schema.root.table || '';
+                rootPrimaryKeyInput.value = schemaDesignerState.schema.root.primary_key || 'id';
+                rootDocFkColumnInput.value = schemaDesignerState.schema.root.document_fk?.column || 'document_id';
+                rootDocFkReferencesInput.value = schemaDesignerState.schema.root.document_fk?.references || 'documents(id)';
+
+                renderFieldsList();
+                renderTreePreview();
+                markClean();
+
+            } catch (error) {
+                console.error('Error loading schema:', error);
+                showToast('Failed to load schema', 'error');
+            }
+        }
+
+        // Collect schema from form
+        function collectSchemaFromForm() {
+            const schema = {
+                name: schemaNameInput.value.trim(),
+                version: parseInt(schemaVersionInput.value) || 1,
+                description: schemaDescriptionInput.value.trim() || undefined,
+                prompt: {
+                    system: schemaSystemPromptInput.value.trim() || undefined,
+                    instructions: schemaInstructionsInput.value.trim() || undefined
+                },
+                root: {
+                    table: rootTableNameInput.value.trim(),
+                    primary_key: rootPrimaryKeyInput.value.trim() || 'id',
+                    document_fk: {
+                        column: rootDocFkColumnInput.value.trim() || 'document_id',
+                        references: rootDocFkReferencesInput.value.trim() || 'documents(id)'
+                    }
+                },
+                fields: schemaDesignerState.schema.fields
+            };
+
+            // Clean up undefined values in prompt
+            if (!schema.prompt.system && !schema.prompt.instructions) {
+                delete schema.prompt;
+            } else {
+                if (!schema.prompt.system) delete schema.prompt.system;
+                if (!schema.prompt.instructions) delete schema.prompt.instructions;
+            }
+
+            if (!schema.description) delete schema.description;
+
+            return schema;
+        }
+
+        // Render fields list
+        function renderFieldsList() {
+            const fields = schemaDesignerState.schema.fields;
+
+            if (fields.length === 0) {
+                fieldsListEl.innerHTML = '<div class="empty-state">No fields defined. Click "Add Field" to create one.</div>';
+                return;
+            }
+
+            fieldsListEl.innerHTML = fields.map((field, index) => `
+                <div class="field-card ${schemaDesignerState.ui.selectedFieldIndex === index ? 'selected' : ''}"
+                     data-index="${index}"
+                     draggable="true">
+                    <div class="field-drag-handle">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <div class="field-info">
+                        <div class="field-name">${escapeHtml(field.name)}</div>
+                        <div class="field-meta">
+                            <span class="field-type-badge ${field.type === 'array' ? 'array' : ''}">${escapeHtml(field.type)}</span>
+                            ${field.description ? ` - ${escapeHtml(field.description.substring(0, 40))}${field.description.length > 40 ? '...' : ''}` : ''}
+                        </div>
+                    </div>
+                    <div class="field-actions">
+                        <button class="field-action-btn edit-field-btn" data-index="${index}">Edit</button>
+                        <button class="field-action-btn delete field-delete-btn" data-index="${index}">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add event listeners
+            fieldsListEl.querySelectorAll('.field-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    if (!e.target.closest('.field-actions')) {
+                        const index = parseInt(card.dataset.index);
+                        schemaDesignerState.ui.selectedFieldIndex = index;
+                        renderFieldsList();
+                    }
+                });
+
+                // Drag events
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+                card.addEventListener('dragover', handleDragOver);
+                card.addEventListener('drop', handleDrop);
+            });
+
+            fieldsListEl.querySelectorAll('.edit-field-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openFieldModal(parseInt(btn.dataset.index));
+                });
+            });
+
+            fieldsListEl.querySelectorAll('.field-delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteField(parseInt(btn.dataset.index));
+                });
+            });
+        }
+
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            const index = parseInt(e.currentTarget.dataset.index);
+            schemaDesignerState.ui.dragState = { dragging: true, dragIndex: index };
+            e.currentTarget.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            schemaDesignerState.ui.dragState = { dragging: false, dragIndex: null };
+            e.currentTarget.classList.remove('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const fromIndex = schemaDesignerState.ui.dragState.dragIndex;
+            const toIndex = parseInt(e.currentTarget.dataset.index);
+
+            if (fromIndex !== null && fromIndex !== toIndex) {
+                const fields = schemaDesignerState.schema.fields;
+                const [removed] = fields.splice(fromIndex, 1);
+                fields.splice(toIndex, 0, removed);
+                renderFieldsList();
+                renderTreePreview();
+                markDirty();
+            }
+        }
+
+        // Add new field
+        function addField() {
+            const rootTable = rootTableNameInput.value.trim() || 'contracts';
+            const newField = {
+                name: `field_${schemaDesignerState.schema.fields.length + 1}`,
+                type: 'string',
+                description: '',
+                sql: {
+                    table: rootTable,
+                    column: `field_${schemaDesignerState.schema.fields.length + 1}`,
+                    type: 'TEXT'
+                },
+                merge: {
+                    strategy: 'first_non_empty'
+                }
+            };
+
+            schemaDesignerState.schema.fields.push(newField);
+            renderFieldsList();
+            renderTreePreview();
+            markDirty();
+
+            // Open modal to edit the new field
+            openFieldModal(schemaDesignerState.schema.fields.length - 1);
+        }
+
+        // Delete field
+        function deleteField(index) {
+            if (confirm('Are you sure you want to delete this field?')) {
+                schemaDesignerState.schema.fields.splice(index, 1);
+                schemaDesignerState.ui.selectedFieldIndex = null;
+                renderFieldsList();
+                renderTreePreview();
+                markDirty();
+            }
+        }
+
+        // Open field edit modal
+        function openFieldModal(index) {
+            schemaDesignerState.ui.editingFieldIndex = index;
+            const field = schemaDesignerState.schema.fields[index];
+
+            fieldModalTitle.textContent = index === null ? 'Add Field' : 'Edit Field';
+
+            // Populate basic info
+            fieldNameInput.value = field.name || '';
+            fieldTypeSelect.value = field.type || 'string';
+            fieldDescriptionInput.value = field.description || '';
+
+            // Populate SQL mapping
+            fieldSqlTableInput.value = field.sql?.table || '';
+            fieldSqlColumnInput.value = field.sql?.column || '';
+            fieldSqlTypeSelect.value = field.sql?.type || 'TEXT';
+            fieldSqlFkColumnInput.value = field.sql?.fk?.column || '';
+            fieldSqlFkReferencesInput.value = field.sql?.fk?.references || '';
+
+            // Populate merge strategy
+            fieldMergeStrategySelect.value = field.merge?.strategy || 'first_non_empty';
+            fieldMergeKeyFieldsInput.value = (field.merge?.key_fields || []).join(', ');
+
+            // Populate array items
+            if (field.type === 'array') {
+                fieldItemsTypeSelect.value = field.items?.type || 'string';
+                fieldItemsDescriptionInput.value = field.items?.description || '';
+                renderNestedFields(field.items?.fields || []);
+                renderSqlColumns(field.sql?.columns || []);
+            }
+
+            updateModalForFieldType(field.type);
+            updateMergeKeyFieldsVisibility();
+
+            // Reset to basic tab
+            fieldModalTabs.forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.field-tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelector('[data-tab="basic"]').classList.add('active');
+            document.getElementById('tab-basic').classList.add('active');
+
+            fieldModal.classList.add('active');
+        }
+
+        // Update modal based on field type
+        function updateModalForFieldType(type) {
+            const isArray = type === 'array';
+            const itemsTab = document.getElementById('items-tab');
+            const sqlColumnGroup = document.getElementById('field-sql-column-group');
+            const sqlTypeGroup = document.getElementById('field-sql-type-group');
+            const arraySqlFields = document.getElementById('array-sql-fields');
+
+            itemsTab.style.display = isArray ? 'block' : 'none';
+            sqlColumnGroup.style.display = isArray ? 'none' : 'block';
+            sqlTypeGroup.style.display = isArray ? 'none' : 'block';
+            arraySqlFields.style.display = isArray ? 'block' : 'none';
+        }
+
+        // Update merge key fields visibility
+        function updateMergeKeyFieldsVisibility() {
+            const strategy = fieldMergeStrategySelect.value;
+            document.getElementById('merge-key-fields-group').style.display =
+                strategy === 'union_by_key' ? 'block' : 'none';
+        }
+
+        // Render nested fields for object items
+        function renderNestedFields(fields) {
+            const container = document.getElementById('nested-fields-list');
+            container.innerHTML = fields.map((field, index) => `
+                <div class="nested-field-row" data-index="${index}">
+                    <input type="text" placeholder="Name" value="${escapeHtml(field.name || '')}" class="nested-field-name">
+                    <select class="nested-field-type">
+                        <option value="string" ${field.type === 'string' ? 'selected' : ''}>String</option>
+                        <option value="date" ${field.type === 'date' ? 'selected' : ''}>Date</option>
+                        <option value="integer" ${field.type === 'integer' ? 'selected' : ''}>Integer</option>
+                        <option value="number" ${field.type === 'number' ? 'selected' : ''}>Number</option>
+                        <option value="boolean" ${field.type === 'boolean' ? 'selected' : ''}>Boolean</option>
+                    </select>
+                    <input type="text" placeholder="Description" value="${escapeHtml(field.description || '')}" class="nested-field-desc">
+                    <button class="nested-field-remove" onclick="removeNestedField(${index})">×</button>
+                </div>
+            `).join('');
+        }
+
+        // Render SQL columns for array fields
+        function renderSqlColumns(columns) {
+            const container = document.getElementById('sql-columns-list');
+            container.innerHTML = columns.map((col, index) => `
+                <div class="nested-field-row" data-index="${index}">
+                    <input type="text" placeholder="Column Name" value="${escapeHtml(col.name || '')}" class="sql-column-name">
+                    <select class="sql-column-type">
+                        <option value="TEXT" ${col.type === 'TEXT' ? 'selected' : ''}>TEXT</option>
+                        <option value="INTEGER" ${col.type === 'INTEGER' ? 'selected' : ''}>INTEGER</option>
+                        <option value="REAL" ${col.type === 'REAL' ? 'selected' : ''}>REAL</option>
+                        <option value="TIMESTAMP" ${col.type === 'TIMESTAMP' ? 'selected' : ''}>TIMESTAMP</option>
+                    </select>
+                    <button class="nested-field-remove" onclick="removeSqlColumn(${index})">×</button>
+                </div>
+            `).join('');
+        }
+
+        // Add nested field
+        function addNestedField() {
+            const container = document.getElementById('nested-fields-list');
+            const index = container.children.length;
+            const row = document.createElement('div');
+            row.className = 'nested-field-row';
+            row.dataset.index = index;
+            row.innerHTML = `
+                <input type="text" placeholder="Name" class="nested-field-name">
+                <select class="nested-field-type">
+                    <option value="string">String</option>
+                    <option value="date">Date</option>
+                    <option value="integer">Integer</option>
+                    <option value="number">Number</option>
+                    <option value="boolean">Boolean</option>
+                </select>
+                <input type="text" placeholder="Description" class="nested-field-desc">
+                <button class="nested-field-remove" onclick="removeNestedField(${index})">×</button>
+            `;
+            container.appendChild(row);
+        }
+
+        // Remove nested field
+        window.removeNestedField = function(index) {
+            const container = document.getElementById('nested-fields-list');
+            const rows = container.querySelectorAll('.nested-field-row');
+            if (rows[index]) {
+                rows[index].remove();
+            }
+        };
+
+        // Add SQL column
+        function addSqlColumn() {
+            const container = document.getElementById('sql-columns-list');
+            const index = container.children.length;
+            const row = document.createElement('div');
+            row.className = 'nested-field-row';
+            row.dataset.index = index;
+            row.innerHTML = `
+                <input type="text" placeholder="Column Name" class="sql-column-name">
+                <select class="sql-column-type">
+                    <option value="TEXT">TEXT</option>
+                    <option value="INTEGER">INTEGER</option>
+                    <option value="REAL">REAL</option>
+                    <option value="TIMESTAMP">TIMESTAMP</option>
+                </select>
+                <button class="nested-field-remove" onclick="removeSqlColumn(${index})">×</button>
+            `;
+            container.appendChild(row);
+        }
+
+        // Remove SQL column
+        window.removeSqlColumn = function(index) {
+            const container = document.getElementById('sql-columns-list');
+            const rows = container.querySelectorAll('.nested-field-row');
+            if (rows[index]) {
+                rows[index].remove();
+            }
+        };
+
+        // Collect nested fields from modal
+        function collectNestedFields() {
+            const fields = [];
+            document.querySelectorAll('#nested-fields-list .nested-field-row').forEach(row => {
+                const name = row.querySelector('.nested-field-name').value.trim();
+                if (name) {
+                    fields.push({
+                        name: name,
+                        type: row.querySelector('.nested-field-type').value,
+                        description: row.querySelector('.nested-field-desc').value.trim() || undefined
+                    });
+                }
+            });
+            return fields;
+        }
+
+        // Collect SQL columns from modal
+        function collectSqlColumns() {
+            const columns = [];
+            document.querySelectorAll('#sql-columns-list .nested-field-row').forEach(row => {
+                const name = row.querySelector('.sql-column-name').value.trim();
+                if (name) {
+                    columns.push({
+                        name: name,
+                        type: row.querySelector('.sql-column-type').value
+                    });
+                }
+            });
+            return columns;
+        }
+
+        // Save field from modal
+        function saveField() {
+            const index = schemaDesignerState.ui.editingFieldIndex;
+            const type = fieldTypeSelect.value;
+
+            const field = {
+                name: fieldNameInput.value.trim(),
+                type: type,
+                description: fieldDescriptionInput.value.trim() || undefined,
+                sql: {
+                    table: fieldSqlTableInput.value.trim()
+                },
+                merge: {
+                    strategy: fieldMergeStrategySelect.value
+                }
+            };
+
+            // Clean up description if empty
+            if (!field.description) delete field.description;
+
+            // Handle merge key fields
+            if (field.merge.strategy === 'union_by_key') {
+                const keyFields = fieldMergeKeyFieldsInput.value.split(',')
+                    .map(k => k.trim())
+                    .filter(k => k);
+                if (keyFields.length > 0) {
+                    field.merge.key_fields = keyFields;
+                }
+            }
+
+            if (type === 'array') {
+                // Array field configuration
+                field.sql.columns = collectSqlColumns();
+                field.sql.fk = {
+                    column: fieldSqlFkColumnInput.value.trim(),
+                    references: fieldSqlFkReferencesInput.value.trim()
+                };
+
+                field.items = {
+                    type: fieldItemsTypeSelect.value
+                };
+
+                if (fieldItemsDescriptionInput.value.trim()) {
+                    field.items.description = fieldItemsDescriptionInput.value.trim();
+                }
+
+                if (field.items.type === 'object') {
+                    field.items.fields = collectNestedFields();
+                }
+            } else {
+                // Non-array field configuration
+                field.sql.column = fieldSqlColumnInput.value.trim();
+                field.sql.type = fieldSqlTypeSelect.value;
+            }
+
+            schemaDesignerState.schema.fields[index] = field;
+            closeFieldModal();
+            renderFieldsList();
+            renderTreePreview();
+            markDirty();
+        }
+
+        // Close field modal
+        function closeFieldModal() {
+            fieldModal.classList.remove('active');
+            schemaDesignerState.ui.editingFieldIndex = null;
+        }
+
+        // Render tree preview
+        function renderTreePreview() {
+            const schema = collectSchemaFromForm();
+            const rootTable = schema.root?.table || 'root';
+            const docFkColumn = schema.root?.document_fk?.column || 'document_id';
+
+            let html = `<div class="tree-node">
+                <span class="tree-table">${escapeHtml(rootTable)}</span> <span class="tree-node-type">(root table)</span>
+                <div class="tree-children">
+                    <div class="tree-node"><span class="tree-column">id</span>: <span class="tree-node-type">INTEGER PRIMARY KEY</span></div>
+                    <div class="tree-node"><span class="tree-column">${escapeHtml(docFkColumn)}</span>: <span class="tree-node-type">INTEGER FK</span></div>`;
+
+            // Add scalar fields to root table
+            schema.fields.forEach(field => {
+                if (field.type !== 'array' && field.sql?.table === rootTable) {
+                    html += `<div class="tree-node"><span class="tree-column">${escapeHtml(field.sql.column || field.name)}</span>: <span class="tree-node-type">${escapeHtml(field.sql?.type || 'TEXT')}</span></div>`;
+                }
+            });
+
+            html += `</div></div>`;
+
+            // Add child tables (array fields)
+            schema.fields.forEach(field => {
+                if (field.type === 'array') {
+                    const tableName = field.sql?.table || field.name;
+                    const fkColumn = field.sql?.fk?.column || `${rootTable}_id`;
+
+                    html += `<div class="tree-node" style="margin-top: 8px;">
+                        <span class="tree-table">${escapeHtml(tableName)}</span> <span class="tree-node-type">(child table)</span>
+                        <div class="tree-children">
+                            <div class="tree-node"><span class="tree-column">id</span>: <span class="tree-node-type">INTEGER PRIMARY KEY</span></div>
+                            <div class="tree-node"><span class="tree-column">${escapeHtml(fkColumn)}</span>: <span class="tree-node-type">INTEGER FK</span></div>`;
+
+                    (field.sql?.columns || []).forEach(col => {
+                        html += `<div class="tree-node"><span class="tree-column">${escapeHtml(col.name)}</span>: <span class="tree-node-type">${escapeHtml(col.type || 'TEXT')}</span></div>`;
+                    });
+
+                    html += `</div></div>`;
+                }
+            });
+
+            treePreviewEl.innerHTML = html;
+        }
+
+        // Validate schema
+        async function validateSchema() {
+            const schema = collectSchemaFromForm();
+
+            try {
+                const response = await fetch('/api/schema/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schema_data: schema })
+                });
+
+                const result = await response.json();
+
+                schemaDesignerState.ui.validationErrors = result.errors || [];
+                schemaDesignerState.ui.validationWarnings = result.warnings || [];
+
+                renderValidationResults();
+
+                if (result.valid) {
+                    showToast('Schema is valid!', 'success');
+                } else {
+                    showToast('Schema has validation errors', 'error');
+                }
+
+                return result.valid;
+
+            } catch (error) {
+                console.error('Validation error:', error);
+                showToast('Failed to validate schema', 'error');
+                return false;
+            }
+        }
+
+        // Render validation results
+        function renderValidationResults() {
+            const errors = schemaDesignerState.ui.validationErrors;
+            const warnings = schemaDesignerState.ui.validationWarnings;
+
+            if (errors.length === 0 && warnings.length === 0) {
+                validationCard.style.display = 'none';
+                return;
+            }
+
+            validationCard.style.display = 'block';
+
+            let html = '';
+            errors.forEach(err => {
+                html += `<div class="validation-item error">
+                    <span class="validation-path">${escapeHtml(err.path || 'root')}</span>
+                    <span>${escapeHtml(err.message)}</span>
+                </div>`;
+            });
+            warnings.forEach(warn => {
+                html += `<div class="validation-item warning">
+                    <span class="validation-path">${escapeHtml(warn.path || 'root')}</span>
+                    <span>${escapeHtml(warn.message)}</span>
+                </div>`;
+            });
+
+            validationResultsEl.innerHTML = html;
+        }
+
+        // Save schema
+        async function saveSchema() {
+            const schema = collectSchemaFromForm();
+
+            // Client-side validation
+            if (!schema.name) {
+                showToast('Schema name is required', 'error');
+                return;
+            }
+            if (!schema.root?.table) {
+                showToast('Root table name is required', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/schema', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schema_data: schema })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('Schema saved successfully!', 'success');
+                    markClean();
+                    // Reload schema to get any server-side modifications
+                    await loadSchemaForDesigner();
+                    // Also reload the active schema for other parts of the app
+                    await loadSchema();
+                } else {
+                    showToast(result.message || 'Failed to save schema', 'error');
+                    schemaDesignerState.ui.validationErrors = result.validation?.errors || [];
+                    schemaDesignerState.ui.validationWarnings = result.validation?.warnings || [];
+                    renderValidationResults();
+                }
+
+            } catch (error) {
+                console.error('Save error:', error);
+                showToast('Failed to save schema', 'error');
+            }
+        }
+
+        // Export schema
+        function exportSchema(format) {
+            window.location.href = `/api/schema/export/${format}`;
+        }
+
+        // Event listeners for schema designer
+
+        // Form inputs - mark dirty on change
+        [schemaNameInput, schemaVersionInput, schemaDescriptionInput,
+         schemaSystemPromptInput, schemaInstructionsInput,
+         rootTableNameInput, rootPrimaryKeyInput,
+         rootDocFkColumnInput, rootDocFkReferencesInput].forEach(input => {
+            input.addEventListener('input', () => {
+                markDirty();
+                renderTreePreview();
+            });
+        });
+
+        // Add field button
+        addFieldBtn.addEventListener('click', addField);
+
+        // Action buttons
+        validateSchemaBtn.addEventListener('click', validateSchema);
+        saveSchemaBtn.addEventListener('click', saveSchema);
+        exportYamlBtn.addEventListener('click', () => exportSchema('yaml'));
+        exportJsonBtn.addEventListener('click', () => exportSchema('json'));
+        reloadSchemaBtn.addEventListener('click', () => {
+            if (schemaDesignerState.ui.isDirty) {
+                if (!confirm('You have unsaved changes. Are you sure you want to reload?')) {
+                    return;
+                }
+            }
+            loadSchemaForDesigner();
+        });
+
+        // Field modal tabs
+        fieldModalTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                fieldModalTabs.forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.field-tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+            });
+        });
+
+        // Field type change
+        fieldTypeSelect.addEventListener('change', (e) => {
+            updateModalForFieldType(e.target.value);
+
+            // Update items tab visibility
+            if (e.target.value === 'array') {
+                document.getElementById('nested-fields-section').style.display =
+                    fieldItemsTypeSelect.value === 'object' ? 'block' : 'none';
+                document.getElementById('sql-columns-section').style.display = 'block';
+                document.getElementById('items-description-group').style.display =
+                    fieldItemsTypeSelect.value === 'string' ? 'block' : 'none';
+            }
+        });
+
+        // Items type change
+        fieldItemsTypeSelect.addEventListener('change', (e) => {
+            const isObject = e.target.value === 'object';
+            document.getElementById('nested-fields-section').style.display = isObject ? 'block' : 'none';
+            document.getElementById('items-description-group').style.display = isObject ? 'none' : 'block';
+        });
+
+        // Merge strategy change
+        fieldMergeStrategySelect.addEventListener('change', updateMergeKeyFieldsVisibility);
+
+        // Add nested field button
+        document.getElementById('add-nested-field-btn').addEventListener('click', addNestedField);
+
+        // Add SQL column button
+        document.getElementById('add-sql-column-btn').addEventListener('click', addSqlColumn);
+
+        // Field modal buttons
+        closeFieldModalBtn.addEventListener('click', closeFieldModal);
+        cancelFieldBtn.addEventListener('click', closeFieldModal);
+        saveFieldBtn.addEventListener('click', saveField);
+
+        fieldModal.addEventListener('click', (e) => {
+            if (e.target === fieldModal) {
+                closeFieldModal();
+            }
+        });
+
+        // Navigation handler for schema section
+        const schemaNavItem = document.querySelector('[data-section="schema"]');
+        if (schemaNavItem) {
+            schemaNavItem.addEventListener('click', () => {
+                // Load schema when switching to the designer tab
+                if (!schemaDesignerState.schema.name) {
+                    loadSchemaForDesigner();
+                }
+            });
+        }
+
+        // Warn before leaving with unsaved changes
+        window.addEventListener('beforeunload', (e) => {
+            if (schemaDesignerState.ui.isDirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
     </script>
 </body>
 </html>
