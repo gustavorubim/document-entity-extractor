@@ -111,45 +111,60 @@ def build_system_prompt() -> str:
 
 {schema_context}
 
-## Your Task
-Answer user questions about the data in this database. Use the execute_sql tool to query the database when needed.
+## CRITICAL RULES
+1. You have NO knowledge of the actual data in the database
+2. You MUST use execute_sql to query the database before answering ANY question about data
+3. NEVER guess, assume, or make up data - always query first
+4. Base your answers ONLY on the actual query results
 
-## Instructions
-1. Think step by step about what information you need
-2. Write SQL queries to get the data
-3. Analyze the results and provide a clear answer
-4. If the query returns no results, explain what that means
+## Your Task
+Answer user questions about the data in this database by querying it.
+
+## Response Format
+You MUST follow this exact format:
+
+Thought: [what you need to find out]
+Action: execute_sql
+Action Input: [your SQL query]
+
+After seeing the Observation (query results), you can either:
+- Query again if you need more information
+- Provide your final answer based on the results
+
+When ready to answer:
+Thought: [summary of what the data shows]
+Final Answer: [your answer based on the query results]
+
+## Example
+
+User: How many documents are there?
+
+Thought: I need to count the documents in the database. I'll query the documents table.
+Action: execute_sql
+Action Input: SELECT COUNT(*) as count FROM documents
+
+Observation: | count |
+| --- |
+| 10 |
+
+Total: 1 row(s)
+
+Thought: The query shows there are 10 documents in the database.
+Final Answer: There are 10 documents in the database.
 
 ## Important Notes
 - Only use SELECT statements (the database is read-only)
 - Use proper SQL syntax for SQLite
 - Join tables as needed to answer complex questions
-- Limit results to avoid overwhelming output (use LIMIT)
-- If you're unsure, start with a simple query to explore the data
-
-## Response Format
-Use this exact format for your reasoning:
-
-Thought: [your reasoning about what to do next]
-Action: execute_sql
-Action Input: [your SQL query]
-
-After seeing the observation (query results), continue with:
-
-Thought: [analyze the results]
-Action: execute_sql
-Action Input: [another query if needed]
-
-When you have enough information:
-
-Thought: [final analysis]
-Final Answer: [your complete answer to the user's question]
-
-Always end with "Final Answer:" followed by a clear, helpful response."""
+- ALWAYS query the database - never answer from memory or assumptions"""
 
 
 def parse_agent_response(text: str) -> tuple[str | None, str | None, str | None, str | None]:
-    """Parse the agent's response to extract thought, action, action_input, and final_answer."""
+    """Parse the agent's response to extract thought, action, action_input, and final_answer.
+
+    Returns all components found. The caller decides priority based on state
+    (e.g., prefer final_answer if we've already queried the database).
+    """
     thought = None
     action = None
     action_input = None
@@ -160,25 +175,25 @@ def parse_agent_response(text: str) -> tuple[str | None, str | None, str | None,
     if thought_match:
         thought = thought_match.group(1).strip()
 
-    # Check for final answer
-    final_match = re.search(r"Final Answer:\s*(.+?)$", text, re.DOTALL)
-    if final_match:
-        final_answer = final_match.group(1).strip()
-        return thought, None, None, final_answer
-
-    # Extract action
+    # Extract Action if present
     action_match = re.search(r"Action:\s*(\w+)", text)
     if action_match:
         action = action_match.group(1).strip()
 
-    # Extract action input - handle multi-line SQL
-    input_match = re.search(r"Action Input:\s*(.+?)(?=Thought:|Action:|Final Answer:|Observation:|$)", text, re.DOTALL)
-    if input_match:
-        action_input = input_match.group(1).strip()
-        # Clean up markdown code blocks if present
-        if action_input.startswith("```"):
-            action_input = re.sub(r"^```(?:sql)?\s*\n?", "", action_input)
-            action_input = re.sub(r"\n?```\s*$", "", action_input)
+        # Extract action input - handle multi-line SQL
+        # Stop at Observation (which would be hallucinated) or end of text
+        input_match = re.search(r"Action Input:\s*(.+?)(?=Thought:|Action:|Final Answer:|Observation:|$)", text, re.DOTALL)
+        if input_match:
+            action_input = input_match.group(1).strip()
+            # Clean up markdown code blocks if present
+            if action_input.startswith("```"):
+                action_input = re.sub(r"^```(?:sql)?\s*\n?", "", action_input)
+                action_input = re.sub(r"\n?```\s*$", "", action_input)
+
+    # Extract Final Answer if present
+    final_match = re.search(r"Final Answer:\s*(.+?)$", text, re.DOTALL)
+    if final_match:
+        final_answer = final_match.group(1).strip()
 
     return thought, action, action_input, final_answer
 
@@ -234,6 +249,7 @@ async def run_chat_agent(user_message: str, conversation_history: list[dict] | N
     system_prompt = build_system_prompt()
 
     steps: list[AgentStep] = []
+    has_queried = False  # Track if any SQL queries have been executed
 
     # Build the conversation for the LLM
     messages = [system_prompt]
@@ -261,14 +277,20 @@ async def run_chat_agent(user_message: str, conversation_history: list[dict] | N
             )
 
             response_text = response.text
-            logger.debug(f"Agent response (iteration {iteration + 1}):\n{response_text}")
+            logger.info(f"Agent response (iteration {iteration + 1}):\n{response_text}")
 
             # Parse the response
             thought, action, action_input, final_answer = parse_agent_response(response_text)
 
             step = AgentStep(thought=thought or "")
 
-            if final_answer:
+            # Decide what to do based on what was parsed and current state
+            # Priority: If we've already queried and have a final answer, use it
+            #           Otherwise, if there's an action, execute it
+            #           Otherwise, if there's a final answer but no query yet, reject it
+
+            if has_queried and final_answer:
+                # We have query results and a final answer - accept it
                 step.thought = thought or "Providing final answer"
                 steps.append(step)
                 return ChatResponse(answer=final_answer, steps=steps)
@@ -281,13 +303,20 @@ async def run_chat_agent(user_message: str, conversation_history: list[dict] | N
                 observation = await execute_tool(action, action_input)
                 step.observation = observation
                 steps.append(step)
+                has_queried = True  # Mark that we've executed a query
+                logger.info(f"Executed SQL query: {action_input}")
 
                 # Add the observation to the prompt for the next iteration
                 current_prompt += f"\n\n{response_text}\n\nObservation: {observation}"
-            else:
-                # No action or final answer - try to get a final answer
+            elif final_answer and not has_queried:
+                # Has final answer but hasn't queried - reject and force a query
+                logger.warning("LLM tried to answer without querying - forcing a query")
                 steps.append(step)
-                current_prompt += f"\n\n{response_text}\n\nPlease provide a Final Answer based on the information you have."
+                current_prompt += f"\n\n{response_text}\n\nYou must query the database first before providing an answer. You have NO knowledge of the data. Use execute_sql to query, then answer based on the results."
+            else:
+                # No action and no final answer - force a query
+                steps.append(step)
+                current_prompt += f"\n\n{response_text}\n\nYou must use execute_sql to query the database. Provide:\nThought: [what you need to find]\nAction: execute_sql\nAction Input: [your SQL query]"
 
         except Exception as e:
             logger.error(f"Error in agent iteration {iteration + 1}: {e}", exc_info=True)
