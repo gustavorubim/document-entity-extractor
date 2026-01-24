@@ -197,10 +197,12 @@ def ensure_table(conn: sqlite3.Connection, table_name: str, columns: list[dict[s
     for column in columns:
         if column["name"] in existing_columns:
             continue
-        conn.execute(f"ALTER TABLE {safe_table} ADD COLUMN {_column_sql(column)};")
+        # SQLite doesn't allow non-constant defaults in ALTER TABLE ADD COLUMN
+        # So we need to use a modified column SQL without non-constant defaults
+        conn.execute(f"ALTER TABLE {safe_table} ADD COLUMN {_column_sql(column, for_alter=True)};")
 
 
-def _column_sql(column: dict[str, Any]) -> str:
+def _column_sql(column: dict[str, Any], for_alter: bool = False) -> str:
     # Validate column name to prevent SQL injection
     safe_name = validate_identifier(column["name"], "column name")
     col_type = column.get("type", "TEXT").upper()
@@ -222,8 +224,21 @@ def _column_sql(column: dict[str, Any]) -> str:
         # Validate default value - only allow safe patterns
         if not _is_safe_default(default_val):
             raise ValueError(f"Invalid default value: {default_val}")
-        parts.append(f"DEFAULT {default_val}")
+        # SQLite doesn't allow non-constant defaults (like CURRENT_TIMESTAMP)
+        # in ALTER TABLE ADD COLUMN statements
+        if for_alter and _is_non_constant_default(default_val):
+            pass  # Skip the default for ALTER TABLE
+        else:
+            parts.append(f"DEFAULT {default_val}")
     return " ".join(parts)
+
+
+def _is_non_constant_default(default: Any) -> bool:
+    """Check if a default value is non-constant (like CURRENT_TIMESTAMP)."""
+    if not isinstance(default, str):
+        return False
+    non_constant_defaults = {"CURRENT_TIMESTAMP", "CURRENT_DATE", "CURRENT_TIME"}
+    return default.upper() in non_constant_defaults
 
 
 def _is_safe_constraint(constraint: str) -> bool:
