@@ -1,4 +1,4 @@
-# EEDF - Intelligent Document Processing
+# Intelligent Document Processing
 
 A Python application that leverages Google Gemini LLM to extract structured data from legal contracts and documents (PDF/DOCX). Built with FastAPI, LangGraph, and SQLite.
 
