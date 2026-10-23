@@ -56,3 +56,6 @@ Thumbs.db
 # UV
 .uv/
 uv.lock
+
+# Local agent settings
+.claude/settings.local.json
